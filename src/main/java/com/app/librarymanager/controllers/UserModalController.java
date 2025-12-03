@@ -217,8 +217,15 @@ public class UserModalController extends ControllerWithLoader {
         AlertDialog.showAlert("success", "Success", resp.getString("message"), null);
         stage.close();
         if (saveCallback != null) {
-          if (resp.has("data") && filePath != null && !filePath.isEmpty()) {
-            user.setPhotoUrl(resp.getJSONObject("data").getString("photoUrl"));
+          // Nếu backend trả về dữ liệu user đầy đủ, dùng nó để cập nhật lại model
+          // (bao gồm uid, createdAt, lastModifiedDate, lastLoginAt, ...)
+          if (resp.has("data")) {
+            JSONObject data = resp.getJSONObject("data");
+            user = new User(data);
+            // Nếu có upload avatar mới và backend trả về photoUrl, đảm bảo set vào user
+            if (filePath != null && !filePath.isEmpty() && data.has("photoUrl")) {
+              user.setPhotoUrl(data.getString("photoUrl"));
+            }
           }
           saveCallback.onSave(user);
         }

@@ -63,8 +63,28 @@ public class UserController {
   public static JSONObject createUser(User user) {
     try {
       checkPermission();
-      return new JSONObject().put("success",
-              (FirebaseAuthentication.createAccountWithEmailAndPassword(user)).getBoolean("success"))
+      JSONObject registerResponse = FirebaseAuthentication.createAccountWithEmailAndPassword(user);
+
+      if (!registerResponse.getBoolean("success")) {
+        // Giữ nguyên cấu trúc trả về lỗi từ FirebaseAuthentication
+        return registerResponse;
+      }
+
+      // Lấy localId từ response đăng ký để truy vấn đầy đủ thông tin user (bao gồm createdAt)
+      JSONObject data = registerResponse.getJSONObject("data");
+      String localId = data.optString("localId", null);
+
+      if (localId == null || localId.isEmpty()) {
+        return new JSONObject().put("success", false)
+            .put("message", "User created but missing localId in response.");
+      }
+
+      // Lấy lại user từ Firebase Admin SDK để có metadata (creationTimestamp, lastSignIn, ...)
+      JSONObject createdUserJson = new JSONObject(FirebaseAuth.getInstance().getUser(localId));
+
+      return new JSONObject()
+          .put("success", true)
+          .put("data", createdUserJson)
           .put("message", "User created successfully.");
     } catch (Exception e) {
       return new JSONObject().put("success", false).put("message", e.getMessage());
