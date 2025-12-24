@@ -36,6 +36,12 @@ public class BookCopiesController {
             Updates.set("lastUpdated", new Timestamp(System.currentTimeMillis()))));
   }
 
+  public static boolean decreaseCopy(BookCopies copies) {
+    return MongoDB.getInstance().updateAll("bookCopies", Filters.eq("bookId", copies.getBookId()),
+        Updates.combine(Updates.inc("copies", -copies.getCopies()),
+            Updates.set("lastUpdated", new Timestamp(System.currentTimeMillis()))));
+  }
+
   public static Document editCopy(BookCopies copies) {
     if (copies.getCopies() < 0) {
       return null;

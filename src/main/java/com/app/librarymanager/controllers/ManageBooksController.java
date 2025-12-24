@@ -30,6 +30,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
+import org.bson.Document;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -322,12 +323,20 @@ public class ManageBooksController extends ControllerWithLoader {
       final TableRow<Book> row = new TableRow<>();
       final ContextMenu contextMenu = new ContextMenu();
       final MenuItem editMenuItem = new MenuItem("Edit Book");
+      final MenuItem sellMenuItem = new MenuItem("Sell Book");
       final MenuItem deleteMenuItem = new MenuItem("Delete Book");
 
       editMenuItem.setOnAction(event -> {
         Book book = row.getItem();
         //  System.out.println("Edit book: " + book.get_id());
         openBookModal(book);
+      });
+
+      sellMenuItem.setOnAction(event -> {
+        Book book = row.getItem();
+        if (book != null) {
+          openSellBookDialog(book);
+        }
       });
 
       deleteMenuItem.setOnAction(event -> {
@@ -364,7 +373,7 @@ public class ManageBooksController extends ControllerWithLoader {
         });
       });
 
-      contextMenu.getItems().addAll(editMenuItem, deleteMenuItem);
+      contextMenu.getItems().addAll(editMenuItem, sellMenuItem, deleteMenuItem);
       row.contextMenuProperty().bind(
           javafx.beans.binding.Bindings.when(row.emptyProperty()).then((ContextMenu) null)
               .otherwise(contextMenu));
@@ -507,5 +516,185 @@ public class ManageBooksController extends ControllerWithLoader {
       loadBooks();
       updatePaginationInfo();
     }
+  }
+
+  private void openSellBookDialog(Book book) {
+    // Make book final for use in lambda
+    final Book finalBook = book;
+    
+    // Get current copies count
+    Task<Document> getCopiesTask = new Task<Document>() {
+      @Override
+      protected Document call() throws Exception {
+        return BookCopiesController.findCopy(new BookCopies(finalBook.getId()));
+      }
+    };
+
+    getCopiesTask.setOnSucceeded(e -> {
+      Document copiesDoc = getCopiesTask.getValue();
+      int currentCopies = 0;
+      if (copiesDoc != null) {
+        BookCopies bookCopies = new BookCopies(copiesDoc);
+        currentCopies = bookCopies.getCopies();
+      }
+
+      // Make currentCopies final for use in lambda
+      final int finalCurrentCopies = currentCopies;
+
+      if (finalCurrentCopies <= 0) {
+        AlertDialog.showAlert("warning", "No Copies Available",
+            "This book has no copies available to sell.", null);
+        return;
+      }
+
+      // Create dialog for selling
+      Dialog<Integer> dialog = new Dialog<>();
+      dialog.setTitle("Sell Book");
+      dialog.setHeaderText("Sell: " + finalBook.getTitle() + "\nAvailable copies: " + finalCurrentCopies);
+
+      // Create input field
+      VBox vbox = new VBox(10);
+      vbox.setPadding(new javafx.geometry.Insets(20));
+      Label quantityLabel = new Label("Quantity to sell:");
+      TextField quantityField = new TextField();
+      quantityField.setPromptText("Enter quantity (max: " + finalCurrentCopies + ")");
+      Label priceLabel = new Label();
+      priceLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #3b82f6;");
+
+      // Calculate price when quantity changes
+      quantityField.textProperty().addListener((observable, oldValue, newValue) -> {
+        try {
+          if (newValue != null && !newValue.isEmpty()) {
+            int quantity = Integer.parseInt(newValue);
+            if (quantity > 0 && quantity <= finalCurrentCopies) {
+              double unitPrice = finalBook.getDiscountPrice() > 0 ? finalBook.getDiscountPrice() : finalBook.getPrice();
+              double totalPrice = quantity * unitPrice;
+              priceLabel.setText(String.format("Total: %.2f %s", totalPrice, finalBook.getCurrencyCode()));
+            } else {
+              priceLabel.setText("");
+            }
+          } else {
+            priceLabel.setText("");
+          }
+        } catch (NumberFormatException ex) {
+          priceLabel.setText("");
+        }
+      });
+
+      vbox.getChildren().addAll(quantityLabel, quantityField, priceLabel);
+      dialog.getDialogPane().setContent(vbox);
+
+      // Add buttons
+      ButtonType sellButtonType = new ButtonType("Sell", ButtonBar.ButtonData.OK_DONE);
+      ButtonType cancelButtonType = ButtonType.CANCEL;
+      dialog.getDialogPane().getButtonTypes().addAll(sellButtonType, cancelButtonType);
+
+      Button sellButton = (Button) dialog.getDialogPane().lookupButton(sellButtonType);
+      sellButton.getStyleClass().addAll("btn", "btn-primary");
+      sellButton.setDisable(true);
+
+      // Enable sell button only when valid quantity is entered
+      quantityField.textProperty().addListener((observable, oldValue, newValue) -> {
+        try {
+          if (newValue != null && !newValue.isEmpty()) {
+            int quantity = Integer.parseInt(newValue);
+            sellButton.setDisable(quantity <= 0 || quantity > finalCurrentCopies);
+          } else {
+            sellButton.setDisable(true);
+          }
+        } catch (NumberFormatException ex) {
+          sellButton.setDisable(true);
+        }
+      });
+
+      dialog.setResultConverter(dialogButton -> {
+        if (dialogButton == sellButtonType) {
+          try {
+            return Integer.parseInt(quantityField.getText());
+          } catch (NumberFormatException ex) {
+            return null;
+          }
+        }
+        return null;
+      });
+
+      // Validate before closing
+      sellButton.addEventFilter(ActionEvent.ACTION, event -> {
+        try {
+          int quantity = Integer.parseInt(quantityField.getText());
+          if (quantity <= 0) {
+            AlertDialog.showAlert("error", "Invalid Quantity", "Quantity must be greater than 0.", null);
+            event.consume();
+            return;
+          }
+          if (quantity > finalCurrentCopies) {
+            AlertDialog.showAlert("error", "Insufficient Copies",
+                "Cannot sell more copies than available. Available: " + finalCurrentCopies, null);
+            event.consume();
+            return;
+          }
+        } catch (NumberFormatException ex) {
+          AlertDialog.showAlert("error", "Invalid Input", "Please enter a valid number.", null);
+          event.consume();
+        }
+      });
+
+      dialog.showAndWait().ifPresent(quantity -> {
+        if (quantity != null && quantity > 0 && quantity <= finalCurrentCopies) {
+          sellBook(finalBook, quantity, finalCurrentCopies);
+        }
+      });
+    });
+
+    getCopiesTask.setOnFailed(e -> {
+      AlertDialog.showAlert("error", "Error", "Failed to get book copies information.", null);
+    });
+
+    new Thread(getCopiesTask).start();
+  }
+
+  private void sellBook(Book book, int quantity, int currentCopies) {
+    // Make variables final for use in lambda
+    final Book finalBook = book;
+    final int finalQuantity = quantity;
+    
+    Task<Boolean> sellTask = new Task<Boolean>() {
+      @Override
+      protected Boolean call() throws Exception {
+        // Decrease copies
+        BookCopies copies = new BookCopies(finalBook.getId(), finalQuantity);
+        boolean success = BookCopiesController.decreaseCopy(copies);
+        return success;
+      }
+    };
+
+    sellTask.setOnRunning(e -> showLoading(true));
+    sellTask.setOnSucceeded(e -> {
+      showLoading(false);
+      boolean success = sellTask.getValue();
+      if (success) {
+        // Calculate revenue
+        double unitPrice = finalBook.getDiscountPrice() > 0 ? finalBook.getDiscountPrice() : finalBook.getPrice();
+        double totalRevenue = finalQuantity * unitPrice;
+
+        // Show success message with revenue
+        String message = String.format(
+            "Successfully sold %d copy/copies of '%s'.\n\nRevenue: %.2f %s",
+            finalQuantity, finalBook.getTitle(), totalRevenue, finalBook.getCurrencyCode());
+        AlertDialog.showAlert("success", "Book Sold", message, null);
+
+        // Refresh the table
+        loadBooks();
+      } else {
+        AlertDialog.showAlert("error", "Error", "Failed to sell book. Please try again.", null);
+      }
+    });
+    sellTask.setOnFailed(e -> {
+      showLoading(false);
+      AlertDialog.showAlert("error", "Error",
+          "An error occurred while selling the book: " + sellTask.getException().getMessage(), null);
+    });
+
+    new Thread(sellTask).start();
   }
 }
