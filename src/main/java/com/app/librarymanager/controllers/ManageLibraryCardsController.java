@@ -4,9 +4,6 @@ import com.app.librarymanager.models.LibraryCard;
 import com.app.librarymanager.models.LibraryCard.Status;
 import com.app.librarymanager.utils.AlertDialog;
 import com.app.librarymanager.utils.DateUtil;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -162,13 +159,10 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
       return;
     }
 
-    Date expireDate = Date
-        .from(LocalDate.now().plusYears(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
-
     Task<Void> task = new Task<>() {
       @Override
       protected Void call() {
-        LibraryCardController.approveCard(card.get_id(), expireDate);
+        LibraryCardController.approveCardWithMonths(card.get_id());
         return null;
       }
     };
@@ -270,10 +264,8 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
   }
 
   private void resizeColumnsToFitContent() {
-    // Tính toán độ rộng phù hợp cho từng cột dựa trên nội dung
     javafx.application.Platform.runLater(() -> {
       if (cards.isEmpty()) {
-        // Nếu không có dữ liệu, set độ rộng mặc định
         userIdColumn.setPrefWidth(120);
         userNameColumn.setPrefWidth(150);
         //cardNumberColumn.setPrefWidth(150);
@@ -283,7 +275,7 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
         return;
       }
 
-      // User ID Column - thường ngắn (khoảng 28 ký tự cho UID)
+      // User ID Column
       double userIdWidth = calculateColumnWidth("User ID", cards, card -> 
           card.getUserId() != null ? card.getUserId() : "");
       userIdColumn.setPrefWidth(Math.max(userIdWidth, 120));
@@ -293,12 +285,12 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
           card.getUserName() != null ? card.getUserName() : "");
       userNameColumn.setPrefWidth(Math.max(userNameWidth, 150));
 
-      // Register Date Column - format "HH:mm:ss dd/MM/yyyy" (khoảng 19 ký tự)
+      // Register Date Column - format "HH:mm:ss dd/MM/yyyy"
       double registerDateWidth = calculateColumnWidth("Register Date", cards, card -> 
           card.getRegisterDate() != null ? DateUtil.dateToString(card.getRegisterDate()) : "-");
       registerDateColumn.setPrefWidth(Math.max(registerDateWidth, 180));
 
-      // Expire Date Column - format "HH:mm:ss dd/MM/yyyy" (khoảng 19 ký tự)
+      // Expire Date Column - format "HH:mm:ss dd/MM/yyyy"
       double expireDateWidth = calculateColumnWidth("Expire Date", cards, card -> 
           card.getExpireDate() != null ? DateUtil.dateToString(card.getExpireDate()) : "-");
       expireDateColumn.setPrefWidth(Math.max(expireDateWidth, 180));
@@ -312,21 +304,17 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
 
   private double calculateColumnWidth(String headerText, ObservableList<LibraryCard> items, 
       java.util.function.Function<LibraryCard, String> valueExtractor) {
-    // Tính độ rộng của header (ước tính: 7-8px mỗi ký tự + padding 30px)
     double headerWidth = headerText.length() * 8 + 30;
-    
-    // Tính độ rộng lớn nhất của các giá trị trong cột
+
     double maxContentWidth = headerWidth;
     for (LibraryCard card : items) {
       String value = valueExtractor.apply(card);
       if (value != null && !value.isEmpty()) {
-        // Ước tính: 6-7px mỗi ký tự (tùy font) + padding 30px
         double contentWidth = value.length() * 7 + 30;
         maxContentWidth = Math.max(maxContentWidth, contentWidth);
       }
     }
-    
-    // Thêm một chút padding để đảm bảo không bị cắt
+
     return maxContentWidth + 10;
   }
 }

@@ -77,6 +77,16 @@
           </HBox>
         </graphic>
       </Button>
+      <Separator styleClass="h-separator"/>
+      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onLogoutButtonClick"
+        styleClass="btn, btn-toolbar, danger">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <FontIcon iconLiteral="anto-logout" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="Logout"/>
+          </HBox>
+        </graphic>
+      </Button>
     </ToolBar>
   </left>
   <top>

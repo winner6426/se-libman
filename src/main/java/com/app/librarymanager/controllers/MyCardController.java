@@ -5,11 +5,19 @@ import com.app.librarymanager.models.LibraryCard.Status;
 import com.app.librarymanager.models.User;
 import com.app.librarymanager.utils.AlertDialog;
 import com.app.librarymanager.utils.DateUtil;
+import com.app.librarymanager.utils.StageManager;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Objects;
 import javafx.concurrent.Task;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.text.Text;
 import org.bson.Document;
 
@@ -102,52 +110,86 @@ public class MyCardController extends ControllerWithLoader {
       return;
     }
 
-    setLoadingText("Sending card request...");
+    openCardRegistrationDialog(currentUser);
+  }
+
+  private void openCardRegistrationDialog(User currentUser) {
+    try {
+      FXMLLoader loader = new FXMLLoader(
+          getClass().getResource("/views/components/card-registration-modal.fxml"));
+      Parent parent = loader.load();
+
+      Dialog<Void> dialog = new Dialog<>();
+      dialog.setTitle("Library Card Registration");
+      dialog.initOwner(requestCardButton.getScene().getWindow());
+      dialog.getDialogPane().setContent(parent);
+      dialog.getDialogPane().getStylesheets().add(
+          Objects.requireNonNull(StageManager.class.getResource("/styles/global.css")).toExternalForm());
+
+      CardRegistrationModalController controller = loader.getController();
+      controller.setConfirmCallback(months -> {
+        // Close the dialog
+        dialog.close();
+
+        // Process card registration with selected months
+        processCardRegistration(currentUser, months);
+      });
+
+      ButtonType confirmButtonType = new ButtonType("Register", ButtonBar.ButtonData.OK_DONE);
+      ButtonType cancelButtonType = ButtonType.CANCEL;
+      dialog.getDialogPane().getButtonTypes().addAll(confirmButtonType, cancelButtonType);
+
+      Button confirmButton = (Button) dialog.getDialogPane().lookupButton(confirmButtonType);
+      confirmButton.getStyleClass().addAll("btn", "btn-primary");
+      confirmButton.addEventFilter(ActionEvent.ACTION, event -> {
+        controller.onSubmit();
+        event.consume();
+      });
+
+      Button cancelButton = (Button) dialog.getDialogPane().lookupButton(cancelButtonType);
+      cancelButton.getStyleClass().addAll("btn", "btn-text");
+      cancelButton.addEventFilter(ActionEvent.ACTION, event -> dialog.close());
+
+      dialog.setResultConverter(dialogButton -> null);
+
+      dialog.showAndWait();
+    } catch (Exception e) {
+      e.printStackTrace();
+      AlertDialog.showAlert("error", "Error", "Failed to open registration dialog.", null);
+    }
+  }
+
+  private void processCardRegistration(User currentUser, int months) {
+    setLoadingText("Pending approval");
     Task<Document> task = new Task<>() {
       @Override
       protected Document call() {
         return LibraryCardController.requestCard(currentUser.getUid(),
             currentUser.getDisplayName() != null && !currentUser.getDisplayName().isEmpty()
                 ? currentUser.getDisplayName()
-                : currentUser.getEmail());
+                : currentUser.getEmail(),
+            months);
       }
     };
 
-//    task.setOnRunning(event -> showLoading(true));
-//    task.setOnSucceeded(event -> {
-//      showLoading(false);
-//      if (task.getValue() == null) {
-//        AlertDialog.showAlert("error", "Error", "Đăng ký thẻ thất bại.", null);
-//        return;
-//      }
-//      AlertDialog.showAlert("success", "Thành công",
-//          "Yêu cầu đăng ký thẻ đã được gửi. Vui lòng chờ admin phê duyệt.", null);
-//      LibraryCard card = new LibraryCard(task.getValue());
-//      updateUIWithCard(card);
-//    });
-//    task.setOnFailed(event -> {
-//      showLoading(false);
-//      AlertDialog.showAlert("error", "Error", "Đăng ký thẻ thất bại.", null);
-//    });
-      task.setOnRunning(event -> showLoading(true));
-      task.setOnSucceeded(event -> {
-          showLoading(false);
-          if (task.getValue() == null) {
-              AlertDialog.showAlert("error", "Error", "Card registration failed.", null);
-              return;
-          }
-          AlertDialog.showAlert("success", "Success",
-                  "Your card registration request has been submitted. Please wait for admin approval.", null);
-          LibraryCard card = new LibraryCard(task.getValue());
-          updateUIWithCard(card);
-      });
-      task.setOnFailed(event -> {
-          showLoading(false);
-          AlertDialog.showAlert("error", "Error", "Card registration failed.", null);
-      });
+    task.setOnRunning(event -> showLoading(true));
+    task.setOnSucceeded(event -> {
+      showLoading(false);
+      if (task.getValue() == null) {
+        AlertDialog.showAlert("error", "Error", "Library card registration failed.", null);
+        return;
+      }
+      AlertDialog.showAlert("success", "Success",
+          "Registration submitted. Please wait for approval.", null);
+      LibraryCard card = new LibraryCard(task.getValue());
+      updateUIWithCard(card);
+    });
+    task.setOnFailed(event -> {
+      showLoading(false);
+      AlertDialog.showAlert("error", "Error", "Library card registration failed.", null);
+    });
 
-
-      new Thread(task).start();
+    new Thread(task).start();
   }
 }
 

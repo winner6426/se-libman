@@ -6,6 +6,7 @@ import com.app.librarymanager.models.LibraryCard;
 import com.app.librarymanager.models.LibraryCard.Status;
 import com.app.librarymanager.services.MongoDB;
 import com.mongodb.client.model.Filters;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,15 @@ public class LibraryCardController {
    * If the last card was REJECTED or there is no card, we create a new PENDING request.
    */
   public static Document requestCard(String userId, String userName) {
+    return requestCard(userId, userName, 1); // Default to 1 month
+  }
+
+  /**
+   * User request a new library card with specified number of months.
+   * If the user already has a PENDING or APPROVED card, we keep the existing one.
+   * If the last card was REJECTED or there is no card, we create a new PENDING request.
+   */
+  public static Document requestCard(String userId, String userName, int months) {
     try {
       MongoDB database = MongoDB.getInstance();
       Document existing = database.findAnObject(COLLECTION_NAME, "userId", userId);
@@ -50,6 +60,7 @@ public class LibraryCardController {
       Map<String, Object> data = MongoDB.objectToMap(card);
       data.put("registerDate", new Date());
       data.put("status", Status.PENDING.name());
+      data.put("months", months); // Store the number of months
       return database.addToCollection(COLLECTION_NAME, data);
     } catch (Exception e) {
       return null;
@@ -58,6 +69,42 @@ public class LibraryCardController {
 
   public static Document approveCard(ObjectId id, Date expireDate) {
     try {
+      Map<String, Object> update = new HashMap<>();
+      update.put("expireDate", expireDate);
+      update.put("status", Status.APPROVED.name());
+      return MongoDB.getInstance().updateData(COLLECTION_NAME, "_id", id, update);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /**
+   * Approve card and calculate expire date based on register date and number of months.
+   * If months is not stored in the document, defaults to 1 month.
+   */
+  public static Document approveCardWithMonths(ObjectId id) {
+    try {
+      Document cardDoc = MongoDB.getInstance().findAnObject(COLLECTION_NAME, "_id", id);
+      if (cardDoc == null) {
+        return null;
+      }
+
+      Date registerDate = cardDoc.getDate("registerDate");
+      if (registerDate == null) {
+        registerDate = new Date();
+      }
+
+      Integer months = cardDoc.getInteger("months");
+      if (months == null || months <= 0) {
+        months = 1; // Default to 1 month
+      }
+
+      // Calculate expire date
+      Calendar calendar = Calendar.getInstance();
+      calendar.setTime(registerDate);
+      calendar.add(Calendar.MONTH, months);
+      Date expireDate = calendar.getTime();
+
       Map<String, Object> update = new HashMap<>();
       update.put("expireDate", expireDate);
       update.put("status", Status.APPROVED.name());
