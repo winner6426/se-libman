@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 import lombok.Data;
 import org.bson.Document;
@@ -55,19 +57,38 @@ public class CommentController {
       this.userPhotoUrl = userPhotoUrl;
       this.content = content;
     }
+
+    // Explicit getters for compilation
+    public String getUserDisplayName() { return this.userDisplayName; }
+    public String getUserEmail() { return this.userEmail; }
+    public String getUserPhotoUrl() { return this.userPhotoUrl; }
+    public String getContent() { return this.content; }
   }
 
   public static List<ReturnUserComment> getAllCommentOfBook(String bookId) {
     try {
       List<Document> relatedComments = MongoDB.getInstance()
           .findAllObject("comment", "bookId", StringUtil.escapeString(bookId));
-      Map<String, User> idToUser = UserController.listUsers(
-              relatedComments.stream().map(doc -> doc.getString("userId")).toList()).stream()
-          .collect(Collectors.toMap(User::getUid, doc -> doc, (existing, replacement) -> existing));
+      List<String> ids = relatedComments.stream().map(doc -> doc.getString("userId"))
+          .filter(Objects::nonNull).filter(s -> !s.isEmpty()).toList();
+      List<User> users = null;
+      try {
+        users = UserController.listUsers(ids);
+      } catch (Throwable t) {
+        System.err.println("CommentController.getAllCommentOfBook: failed to fetch users: " + t.getMessage());
+        t.printStackTrace();
+        users = new ArrayList<>();
+      }
+      Map<String, User> idToUser = users != null ? users.stream()
+          .collect(Collectors.toMap(User::getUid, u -> u, (existing, replacement) -> existing))
+          : new HashMap<>();
+
       return relatedComments.stream().map(doc -> {
         User currentUser = idToUser.get(doc.getString("userId"));
-        return new ReturnUserComment(currentUser.getDisplayName(), currentUser.getEmail(),
-            currentUser.getPhotoUrl(), doc.getString("content"));
+        String display = currentUser != null ? currentUser.getDisplayName() : "";
+        String email = currentUser != null ? currentUser.getEmail() : "";
+        String photo = currentUser != null ? currentUser.getPhotoUrl() : "";
+        return new ReturnUserComment(display, email, photo, doc.getString("content"));
       }).toList();
     } catch (Exception e) {
       //  System.out.println(e.getMessage());

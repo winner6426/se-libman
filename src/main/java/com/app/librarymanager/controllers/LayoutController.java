@@ -103,10 +103,13 @@ public class LayoutController implements AuthStateListener {
     homeNavBtn.setOnAction(event -> loadComponent("/views/home.fxml"));
     categoriesNavBtn.setOnAction(event -> loadComponent("/views/categories.fxml"));
     loansNavBtn.setOnAction(event -> {
-      AuthController.requireLogin();
-      if (AuthController.getInstance().isAuthenticated()) {
-        loadComponent("/views/loans.fxml");
+      System.out.println("My Loans button clicked");
+      // If user is not authenticated, open login window immediately (more responsive)
+      if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+        StageManager.showLoginWindow();
+        return;
       }
+      loadComponent("/views/loans.fxml");
     });
     favoritesNavBtn.setOnAction(event -> {
       AuthController.requireLogin();
@@ -267,6 +270,18 @@ public class LayoutController implements AuthStateListener {
   }
 
   @FXML
+  void handleManageLoanRequests(Event e) {
+    // Check admin privileges before loading
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
+        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
+      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Requests.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/manage-loan-requests.fxml");
+  }
+
+  @FXML
   public void handleManageCategories(Event e) {
     handleChangeActiveButton(e);
     loadComponent("/views/admin/manage-categories.fxml");
@@ -345,7 +360,18 @@ public class LayoutController implements AuthStateListener {
     });
 
     loadTask.setOnFailed(event -> {
-      loadTask.getException().printStackTrace();
+      Throwable t = loadTask.getException();
+      System.err.println("Failed to load component: " + fxmlPath + ". Exception: " + (t != null ? t.getMessage() : "null"));
+      if (t != null) t.printStackTrace();
+      // Print root causes
+      Throwable cause = t != null ? t.getCause() : null;
+      while (cause != null) {
+        System.err.println("Caused by: " + cause.getClass().getName() + ": " + cause.getMessage());
+        cause.printStackTrace();
+        cause = cause.getCause();
+      }
+      // Notify user
+      Platform.runLater(() -> AlertDialog.showAlert("error", "Error", "Failed to load component: " + fxmlPath + ". See console for details.", null));
     });
 
     new Thread(loadTask).start();

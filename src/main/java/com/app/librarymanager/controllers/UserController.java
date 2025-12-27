@@ -6,13 +6,13 @@ import com.app.librarymanager.utils.UploadFileUtil;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserIdentifier;
 import com.google.firebase.auth.UserRecord;
+import com.google.firebase.auth.ExportedUserRecord;
 import com.google.firebase.auth.UserRecord.UpdateRequest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -35,27 +35,49 @@ public class UserController {
   }
 
   private static User jsonToUser(JSONObject jsonUser) {
-    return new User(jsonUser.getString("uid"), jsonUser.getString("email"),
-        jsonUser.optString("password", ""), jsonUser.optString("displayName", ""),
-        jsonUser.optJSONObject("customClaims").optString("birthday", ""),
-        jsonUser.optString("phoneNumber", ""), jsonUser.optString("photoUrl", ""),
-        String.valueOf(
-            jsonUser.getJSONObject("userMetadata").optLong("creationTimestamp", 0L)),
-        String.valueOf(
-            jsonUser.getJSONObject("userMetadata").optLong("lastModifiedAt", 0L)),
-        String.valueOf(
-            jsonUser.getJSONObject("userMetadata").optLong("lastSignInTimestamp", 0L)),
-        jsonUser.optString("providerId", ""),
-        jsonUser.optJSONObject("customClaims").optBoolean("admin", false),
-        jsonUser.getBoolean("emailVerified"), jsonUser.getBoolean("disabled"));
+    if (jsonUser == null) return null;
+    String uid = jsonUser.optString("uid", jsonUser.optString("localId", ""));
+    String email = jsonUser.optString("email", "");
+    String password = jsonUser.optString("password", "");
+    String displayName = jsonUser.optString("displayName", "");
+    JSONObject customClaims = jsonUser.optJSONObject("customClaims");
+    String birthday = "";
+    boolean isAdmin = false;
+    if (customClaims != null) {
+      birthday = customClaims.optString("birthday", "");
+      isAdmin = customClaims.optBoolean("admin", false);
+    }
+    String phone = jsonUser.optString("phoneNumber", "");
+    String photo = jsonUser.optString("photoUrl", "");
+    JSONObject metadata = jsonUser.optJSONObject("userMetadata");
+    String createdAt = metadata != null ? String.valueOf(metadata.optLong("creationTimestamp", 0L)) : "";
+    String lastModified = metadata != null ? String.valueOf(metadata.optLong("lastModifiedAt", 0L)) : "";
+    String lastSignIn = metadata != null ? String.valueOf(metadata.optLong("lastSignInTimestamp", 0L)) : "";
+    String providerId = jsonUser.optString("providerId", "");
+    boolean emailVerified = jsonUser.optBoolean("emailVerified", false);
+    boolean disabled = jsonUser.optBoolean("disabled", false);
+    return new User(uid, email, password, displayName, birthday, phone, photo, createdAt, lastModified, lastSignIn, providerId, isAdmin, emailVerified, disabled);
   }
 
   public static User getUser(String userId) {
     try {
       checkPermission();
-      JSONObject jsonUser = new JSONObject(FirebaseAuth.getInstance().getUser(userId));
-      return jsonToUser(jsonUser);
+      UserRecord ur = FirebaseAuth.getInstance().getUser(userId);
+      if (ur == null) return null;
+      try {
+        return userFromRecord(ur);
+      } catch (Exception e) {
+        // Fallback: try JSON path when record conversion fails
+        try {
+          JSONObject jsonUser = new JSONObject(FirebaseAuth.getInstance().getUser(userId));
+          return jsonToUser(jsonUser);
+        } catch (Exception inner) {
+          inner.printStackTrace();
+          return null;
+        }
+      }
     } catch (Exception e) {
+      e.printStackTrace();
       return null;
     }
   }
@@ -139,7 +161,6 @@ public class UserController {
     }
   }
 
-  @NotNull
   private static UpdateRequest getUpdateRequest(User user) {
     UpdateRequest userUpdate = new UpdateRequest(user.getUid());
     userUpdate.setEmailVerified(user.isEmailVerified());
@@ -180,16 +201,22 @@ public class UserController {
   public static List<User> listUsers() {
     try {
       checkPermission();
-      JSONArray jsonUsers = new JSONArray(FirebaseAuth.getInstance().listUsers(null).getValues());
       List<User> users = new ArrayList<>();
-      for (int i = 0; i < jsonUsers.length(); i++) {
-        JSONObject userJson = jsonUsers.getJSONObject(i);
-        User user = jsonToUser(userJson);
-        users.add(user);
+      // Use FirebaseAdmin's iterator to avoid converting to JSON and potential runtime issues
+      Iterable<ExportedUserRecord> iterable = FirebaseAuth.getInstance().listUsers(null).iterateAll();
+      for (ExportedUserRecord ur : iterable) {
+        try {
+          User user = userFromExportedRecord(ur);
+          users.add(user);
+        } catch (Exception inner) {
+          System.err.println("UserController.listUsers: failed to convert an ExportedUserRecord: " + inner.getMessage());
+          inner.printStackTrace();
+        }
       }
       return users;
     } catch (Exception e) {
       //  System.err.println(e.getMessage());
+      e.printStackTrace();
       return null;
     }
   }
@@ -201,19 +228,65 @@ public class UserController {
         if (id == null || id.isEmpty()) {
           continue;
         }
-
-        UserRecord userRecord = FirebaseAuth.getInstance().getUser(id);
-        if (userRecord == null) {
-          continue;
+        try {
+          UserRecord userRecord = FirebaseAuth.getInstance().getUser(id);
+          if (userRecord == null) {
+            continue;
+          }
+          User user = userFromRecord(userRecord);
+          users.add(user);
+        } catch (Exception inner) {
+          System.err.println("UserController.listUsers(ids): failed to fetch/convert user " + id + ": " + inner.getMessage());
+          inner.printStackTrace();
+          // continue with others
         }
-
-        User user = jsonToUser(new JSONObject(userRecord));
-        users.add(user);
       }
       return users;
     } catch (Exception e) {
         System.err.println("aaa" + e.getMessage());
       return null;
     }
+  }
+
+  private static User userFromRecord(UserRecord userRecord) {
+    String uid = userRecord.getUid();
+    String email = userRecord.getEmail();
+    String displayName = userRecord.getDisplayName();
+    String phone = userRecord.getPhoneNumber();
+    String photo = userRecord.getPhotoUrl();
+    String createdAt = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getCreationTimestamp()) : "";
+    String lastModified = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getLastRefreshTimestamp()) : "";
+    String lastLogin = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getLastSignInTimestamp()) : "";
+    Map<String, Object> claims = userRecord.getCustomClaims();
+    boolean isAdmin = false;
+    String birthday = "";
+    if (claims != null) {
+      Object admin = claims.get("admin");
+      if (admin instanceof Boolean) isAdmin = (Boolean) admin;
+      Object b = claims.get("birthday");
+      if (b != null) birthday = String.valueOf(b);
+    }
+    return new User(uid, email, "", displayName, birthday, phone, photo, createdAt, lastModified, lastLogin, "", isAdmin, userRecord.isEmailVerified(), userRecord.isDisabled());
+  }
+
+  private static User userFromExportedRecord(ExportedUserRecord userRecord) {
+    String uid = userRecord.getUid();
+    String email = userRecord.getEmail();
+    String displayName = userRecord.getDisplayName();
+    String phone = userRecord.getPhoneNumber();
+    String photo = userRecord.getPhotoUrl();
+    String createdAt = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getCreationTimestamp()) : "";
+    String lastModified = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getLastRefreshTimestamp()) : "";
+    String lastLogin = userRecord.getUserMetadata() != null ? String.valueOf(userRecord.getUserMetadata().getLastSignInTimestamp()) : "";
+    Map<String, Object> claims = userRecord.getCustomClaims();
+    boolean isAdmin = false;
+    String birthday = "";
+    if (claims != null) {
+      Object admin = claims.get("admin");
+      if (admin instanceof Boolean) isAdmin = (Boolean) admin;
+      Object b = claims.get("birthday");
+      if (b != null) birthday = String.valueOf(b);
+    }
+    return new User(uid, email, "", displayName, birthday, phone, photo, createdAt, lastModified, lastLogin, "", isAdmin, userRecord.isEmailVerified(), userRecord.isDisabled());
   }
 }

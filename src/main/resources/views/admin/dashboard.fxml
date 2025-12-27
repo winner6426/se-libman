@@ -20,8 +20,7 @@
             <HBox alignment="CENTER_RIGHT" spacing="30.0" styleClass="card">
               <StackPane>
                 <Region styleClass="icon-background"/>
-                <FontIcon fill="#3b82f6" iconLiteral="anto-read" iconSize="36"
-                  styleClass="card-icon"/>
+                <Text text="📖" style="-fx-fill: #3b82f6; -fx-font-size: 28px;" styleClass="card-icon" />
               </StackPane>
               <VBox HBox.hgrow="ALWAYS">
                 <Text styleClass="card-title" text="Total Books"/>
@@ -32,8 +31,7 @@
             <HBox alignment="CENTER_RIGHT" spacing="30.0" styleClass="card">
               <StackPane>
                 <Region styleClass="icon-background"/>
-                <FontIcon fill="#3b82f6" iconLiteral="anto-check-circle" iconSize="36"
-                  styleClass="card-icon"/>
+                <Text text="✅" style="-fx-fill: #3b82f6; -fx-font-size: 28px;" styleClass="card-icon" />
               </StackPane>
               <VBox HBox.hgrow="ALWAYS">
                 <Text styleClass="card-title" text="Active Books"/>
@@ -44,8 +42,7 @@
             <HBox alignment="CENTER_RIGHT" spacing="30.0" styleClass="card">
               <StackPane>
                 <Region styleClass="icon-background"/>
-                <FontIcon fill="#3b82f6" iconLiteral="anto-team" iconSize="36"
-                  styleClass="card-icon"/>
+                <Text text="👥" style="-fx-fill: #3b82f6; -fx-font-size: 28px;" styleClass="card-icon" />
               </StackPane>
               <VBox HBox.hgrow="ALWAYS">
                 <Text styleClass="card-title" text="Total Users"/>
@@ -56,8 +53,7 @@
             <HBox alignment="CENTER_RIGHT" spacing="30.0" styleClass="card">
               <StackPane>
                 <Region styleClass="icon-background"/>
-                <FontIcon fill="#3b82f6" iconLiteral="anto-apartment" iconSize="36"
-                  styleClass="card-icon"/>
+                <Text text="🏢" style="-fx-fill: #3b82f6; -fx-font-size: 28px;" styleClass="card-icon" />
               </StackPane>
               <VBox HBox.hgrow="ALWAYS">
                 <Text styleClass="card-title" text="Total Categories"/>

@@ -33,6 +33,9 @@ public class DateUtil {
   }
 
   public static String dateToString(Date date) {
+    if (date == null) {
+      return "N/A";
+    }
     SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
     return formatter.format(date);
   }

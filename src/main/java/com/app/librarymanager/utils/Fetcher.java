@@ -3,13 +3,12 @@ package com.app.librarymanager.utils;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import org.jetbrains.annotations.Nullable;
+// Nullable annotation removed to avoid reliance on external annotation packages in tests
 import org.json.JSONObject;
 
 public class Fetcher {
   private static final HttpClient client = HttpClient.newHttpClient();
 
-  @Nullable
   public static JSONObject get(String url) {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(java.net.URI.create(url))
@@ -23,7 +22,6 @@ public class Fetcher {
     }
   }
 
-  @Nullable
   public static JSONObject post(String url, String body) {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(java.net.URI.create(url))
@@ -39,7 +37,6 @@ public class Fetcher {
     }
   }
 
-  @Nullable
   public static HttpResponse<String> put(String url, String body) {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(java.net.URI.create(url))
@@ -54,7 +51,6 @@ public class Fetcher {
     }
   }
 
-  @Nullable
   public static HttpResponse<String> delete(String url) {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(java.net.URI.create(url))

@@ -1,11 +1,11 @@
 package com.app.librarymanager.controllers;
 
-import com.app.librarymanager.utils.AlertDialog;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.text.Text;
-import lombok.Setter;
+// Removed Lombok @Setter to avoid duplicate setter generation
 
 public class CardRegistrationModalController extends ControllerWithLoader {
 
@@ -19,8 +19,9 @@ public class CardRegistrationModalController extends ControllerWithLoader {
   @FXML
   private Text priceText;
 
-  @Setter
   private ConfirmCallback confirmCallback;
+
+  public void setConfirmCallback(ConfirmCallback confirmCallback) { this.confirmCallback = confirmCallback; }
 
   private static final int PRICE_PER_MONTH = 50000; // 50k per month
 

@@ -7,7 +7,7 @@ module com.app.librarymanager {
   requires java.dotenv;
   requires java.net.http;
   requires annotations;
-  requires  org.json;
+  requires transitive org.json;
   requires com.google.gson;
   requires firebase.admin;
   requires com.google.auth.oauth2;
@@ -20,7 +20,7 @@ module com.app.librarymanager {
   requires java.sql;
   requires org.mongodb.driver.core;
   requires org.mongodb.driver.sync.client;
-  requires org.mongodb.bson;
+  requires transitive org.mongodb.bson;
   requires com.google.api.client;
   requires google.api.client;
   requires com.google.api.client.auth;
@@ -32,6 +32,7 @@ module com.app.librarymanager {
   requires org.apache.commons.lang3;
   requires org.checkerframework.checker.qual;
   requires java.desktop;
+  requires transitive javafx.graphics;
 
   opens com.app.librarymanager to javafx.fxml, com.google.gson;
   exports com.app.librarymanager;

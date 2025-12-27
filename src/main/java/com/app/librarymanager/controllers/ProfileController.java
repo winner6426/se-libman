@@ -32,7 +32,7 @@ import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.util.Callback;
 import javax.imageio.ImageIO;
-import org.jetbrains.annotations.NotNull;
+// Removed NotNull import to avoid runtime annotation accessibility issues
 import org.json.JSONObject;
 
 public class ProfileController extends ControllerWithLoader {

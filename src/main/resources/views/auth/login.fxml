@@ -78,7 +78,7 @@
         styleClass="full-width-button">
         <graphic>
           <HBox alignment="CENTER" spacing="10">
-            <FontIcon iconLiteral="antf-google-circle" iconSize="24"/>
+            <Text text="🔵" style="-fx-font-size:18px;" />
             <Label text="Sign in with Google"/>
           </HBox>
         </graphic>
