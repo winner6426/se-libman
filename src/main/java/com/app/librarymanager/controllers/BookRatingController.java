@@ -76,6 +76,11 @@ public class BookRatingController {
       this.thumbnailBook = thumbnailBook;
       this.bookId = bookId;
     }
+
+    public BookRating getBookRating() { return this.bookRating; }
+    public String getTitleBook() { return this.titleBook; }
+    public String getThumbnailBook() { return this.thumbnailBook; }
+    public String getBookId() { return this.bookId; }
   }
 
   public static List<ReturnRating> bookRatingFromDocument(List<Document> documents) {

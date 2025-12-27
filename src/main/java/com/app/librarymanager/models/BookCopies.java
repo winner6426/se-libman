@@ -38,4 +38,13 @@ public class BookCopies {
     this.copies = document.getInteger("copies");
     this.lastUpdated = document.getDate("lastUpdated");
   }
+
+  // Explicit getters for compilation
+  public String getBookId() {
+    return this.bookId;
+  }
+
+  public int getCopies() {
+    return this.copies;
+  }
 }

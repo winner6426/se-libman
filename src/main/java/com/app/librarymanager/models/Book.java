@@ -134,4 +134,96 @@ public class Book {
     this.lastUpdated = lastUpdated;
   }
 
+  // Explicit getters/setters for compilation safety
+  public String getId() {
+    return this.id;
+  }
+
+  public String getTitle() {
+    return this.title;
+  }
+
+  public String getThumbnail() {
+    return this.thumbnail;
+  }
+
+  public java.util.ArrayList<String> getAuthors() {
+    return this.authors;
+  }
+
+  public java.util.ArrayList<String> getCategories() {
+    return this.categories;
+  }
+
+  public String getISBN() {
+    return this.iSBN;
+  }
+
+  public void set_id(ObjectId id) {
+    this._id = id;
+  }
+
+  public void setLastUpdated(Date lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
+
+  public ObjectId get_id() { return this._id; }
+
+  public double getPrice() {
+    return this.price;
+  }
+
+  public double getDiscountPrice() {
+    return this.discountPrice;
+  }
+
+  public String getCurrencyCode() {
+    return this.currencyCode;
+  }
+
+  public boolean isActivated() {
+    return this.activated;
+  }
+
+  public String getPublisher() {
+    return this.publisher;
+  }
+
+  public String getDescription() {
+    return this.description;
+  }
+
+  public int getPageCount() {
+    return this.pageCount;
+  }
+
+  public String getLanguage() {
+    return this.language;
+  }
+
+  public String getPdfLink() {
+    return this.pdfLink;
+  }
+
+  public String getPublishedDate() {
+    return this.publishedDate;
+  }
+
+  public void setId(String id) { this.id = id; }
+  public void setISBN(String isbn) { this.iSBN = isbn; }
+  public void setTitle(String title) { this.title = title; }
+  public void setPublisher(String publisher) { this.publisher = publisher; }
+  public void setDescription(String description) { this.description = description; }
+  public void setPageCount(int pageCount) { this.pageCount = pageCount; }
+  public void setCategories(ArrayList<String> categories) { this.categories = categories; }
+  public void setAuthors(ArrayList<String> authors) { this.authors = authors; }
+  public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
+  public void setLanguage(String language) { this.language = language; }
+  public void setPrice(double price) { this.price = price; }
+  public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
+  public void setPdfLink(String pdfLink) { this.pdfLink = pdfLink; }
+  public void setPublishedDate(String publishedDate) { this.publishedDate = publishedDate; }
+  public void setDiscountPrice(double discountPrice) { this.discountPrice = discountPrice; }
+  public void setActivated(boolean activated) { this.activated = activated; }
+
 }

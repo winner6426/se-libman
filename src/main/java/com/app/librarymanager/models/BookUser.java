@@ -71,6 +71,27 @@ public class BookUser {
     return document;
   }
 
+  // Explicit getters/setters to ensure availability during compilation
+  public String getUserId() {
+    return this.userId;
+  }
+
+  public String getBookId() {
+    return this.bookId;
+  }
+
+  public ObjectId get_id() {
+    return this._id;
+  }
+
+  public void setLastUpdated(Date lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
+
+  public Date getLastUpdated() {
+    return this.lastUpdated;
+  }
+
 //  public BookUser(JSONObject jsonObject) {
 //    this._id = new ObjectId(jsonObject.optJSONObject("_id").optString("$oid"));
 //    this.bookId = jsonObject.optString("bookId");
