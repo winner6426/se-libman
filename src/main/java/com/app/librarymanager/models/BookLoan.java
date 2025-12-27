@@ -17,11 +17,23 @@ public class BookLoan extends BookUser {
     ONLINE
   }
 
+  public enum Status {
+    PENDING,
+    AVAILABLE,
+    REJECTED,
+    EXPIRED
+  }
+
   private Date borrowDate;
   private Date dueDate;
   private boolean valid;
+  private Status status;
   private Mode type;
   private int numCopies; // = 0 iff online
+  private java.util.Date requestDate;
+  private String processedBy;
+  private java.util.Date processedAt;
+  private String conditionNotes;
 
   public BookLoan() {
     super();
@@ -30,6 +42,7 @@ public class BookLoan extends BookUser {
     valid = false;
     type = Mode.ONLINE;
     numCopies = 0;
+    status = Status.PENDING;
   }
 
   public BookLoan(String userId, String bookId) {
@@ -39,6 +52,7 @@ public class BookLoan extends BookUser {
     this.valid = false;
     this.type = Mode.ONLINE;
     this.numCopies = 0;
+    this.status = Status.PENDING;
   }
 
   public BookLoan(String userId, String bookId, Date borrowDate, Date dueDate) {
@@ -48,6 +62,7 @@ public class BookLoan extends BookUser {
     this.valid = true;
     this.type = Mode.ONLINE;
     this.numCopies = 0;
+    this.status = Status.AVAILABLE;
   }
 
   public BookLoan(String userId, String bookId, LocalDate borrowDate, LocalDate dueDate) {
@@ -83,6 +98,7 @@ public class BookLoan extends BookUser {
     this.valid = true;
     this.type = Mode.OFFLINE;
     this.numCopies = numCopies;
+    this.status = Status.AVAILABLE;
   }
 
   public BookLoan(String userId, String bookId, LocalDate borrowDate, LocalDate dueDate,
@@ -123,6 +139,7 @@ public class BookLoan extends BookUser {
     this.valid = valid;
     this.type = type;
     this.numCopies = numCopies;
+    this.status = valid ? Status.AVAILABLE : Status.EXPIRED;
   }
 
   public Document toDocument() {
@@ -132,6 +149,11 @@ public class BookLoan extends BookUser {
     document.put("valid", valid);
     document.put("type", type.toString());
     document.put("numCopies", numCopies);
+    document.put("status", status == null ? Status.PENDING.toString() : status.toString());
+    document.put("requestDate", requestDate);
+    document.put("processedBy", processedBy);
+    document.put("processedAt", processedAt);
+    document.put("conditionNotes", conditionNotes);
     return document;
   }
 
@@ -142,5 +164,49 @@ public class BookLoan extends BookUser {
     this.valid = document.getBoolean("valid");
     this.type = document.getString("type").equals("OFFLINE") ? Mode.OFFLINE : Mode.ONLINE;
     this.numCopies = document.getInteger("numCopies");
+    String statusStr = document.getString("status");
+    try {
+      this.status = statusStr == null ? Status.PENDING : Status.valueOf(statusStr);
+    } catch (IllegalArgumentException e) {
+      this.status = Status.PENDING;
+    }
+    this.requestDate = document.getDate("requestDate");
+    this.processedBy = document.getString("processedBy");
+    this.processedAt = document.getDate("processedAt");
+    this.conditionNotes = document.getString("conditionNotes");
   }
+
+  // Explicit getters for compilation safety
+  public BookLoan.Status getStatus() {
+    return this.status;
+  }
+
+  public java.util.Date getRequestDate() {
+    return this.requestDate;
+  }
+
+  public String getProcessedBy() {
+    return this.processedBy;
+  }
+
+  public java.util.Date getProcessedAt() {
+    return this.processedAt;
+  }
+
+  public String getConditionNotes() {
+    return this.conditionNotes;
+  }
+
+  // Additional explicit accessors
+  public java.util.Date getBorrowDate() { return this.borrowDate; }
+  public java.util.Date getDueDate() { return this.dueDate; }
+  public boolean isValid() { return this.valid; }
+  public Mode getType() { return this.type; }
+  public int getNumCopies() { return this.numCopies; }
+
+  public void setType(Mode type) { this.type = type; }
+  public void setBorrowDate(java.util.Date borrowDate) { this.borrowDate = borrowDate; }
+  public void setDueDate(java.util.Date dueDate) { this.dueDate = dueDate; }
+  public void setNumCopies(int numCopies) { this.numCopies = numCopies; }
+  public void setValid(boolean valid) { this.valid = valid; }
 }

@@ -19,6 +19,7 @@ import com.mongodb.client.model.Updates;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
+import com.app.librarymanager.utils.DateUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -32,11 +33,24 @@ import org.bson.types.ObjectId;
 
 public class BookLoanController {
 
+  private static final int MAX_BORROW_LIMIT = 5;
+  private static final int DEFAULT_LOAN_DAYS = 30;
+
   public static Map<String, Object> bookLoanToMap(BookLoan bookLoan) {
-    return new HashMap<>(
-        Map.of("userId", bookLoan.getUserId(), "bookId", bookLoan.getBookId(), "borrowDate",
-            bookLoan.getBorrowDate(), "dueDate", bookLoan.getDueDate(), "valid", bookLoan.isValid(),
-            "type", bookLoan.getType().name(), "numCopies", bookLoan.getNumCopies()));
+    Map<String, Object> map = new HashMap<>();
+    map.put("userId", bookLoan.getUserId());
+    map.put("bookId", bookLoan.getBookId());
+    map.put("borrowDate", bookLoan.getBorrowDate());
+    map.put("dueDate", bookLoan.getDueDate());
+    map.put("valid", bookLoan.isValid());
+    map.put("type", bookLoan.getType() != null ? bookLoan.getType().name() : null);
+    map.put("numCopies", bookLoan.getNumCopies());
+    map.put("status", bookLoan.getStatus() == null ? BookLoan.Status.PENDING.toString() : bookLoan.getStatus().toString());
+    map.put("requestDate", bookLoan.getRequestDate());
+    map.put("processedBy", bookLoan.getProcessedBy());
+    map.put("processedAt", bookLoan.getProcessedAt());
+    map.put("conditionNotes", bookLoan.getConditionNotes());
+    return map;
   }
 
   private static Document findOnlineLoan(BookLoan bookLoan) {
@@ -65,6 +79,119 @@ public class BookLoanController {
 
   public static Document addLoan(BookLoan bookLoan) {
     return bookLoan.getType() == Mode.OFFLINE ? addOfflineLoan(bookLoan) : addOnlineLoan(bookLoan);
+  }
+
+  /**
+   * Create a loan request (pending) instead of immediately lending.
+   */
+  public static Document createLoanRequest(BookLoan bookLoan) {
+    try {
+      System.err.println("BookLoanController.createLoanRequest: user=" + bookLoan.getUserId() + ", bookId=" + bookLoan.getBookId() + ", type=" + bookLoan.getType() + ", numCopies=" + bookLoan.getNumCopies());
+      // check borrow limit
+      int requested = bookLoan.getType() == Mode.OFFLINE ? bookLoan.getNumCopies() : 1;
+      long current = countBorrowedCopiesOfUser(bookLoan.getUserId());
+      if (current + requested > MAX_BORROW_LIMIT) {
+        System.err.println("BookLoanController.createLoanRequest: borrow limit exceeded for user " + bookLoan.getUserId()
+            + " current=" + current + " requested=" + requested + " max=" + MAX_BORROW_LIMIT);
+        return null;
+      }
+      // prepare document
+      Map<String, Object> map = bookLoanToMap(bookLoan);
+      map.put("status", BookLoan.Status.PENDING.toString());
+      map.put("requestDate", new Date());
+      map.put("valid", false);
+      Document doc = MongoDB.getInstance().addToCollection("bookLoan", map);
+      if (doc == null) {
+        System.err.println("BookLoanController.createLoanRequest: MongoDB.addToCollection returned null for user=" + bookLoan.getUserId());
+      } else {
+        System.err.println("BookLoanController.createLoanRequest: created loan request _id=" + doc.getObjectId("_id") + " for user=" + bookLoan.getUserId());
+      }
+      return doc;
+    } catch (Exception e) {
+      System.err.println("BookLoanController.createLoanRequest: exception when creating loan request: " + e.getMessage());
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  public static long countBorrowedCopiesOfUser(String userId) {
+    try {
+      List<Document> docs = MongoDB.getInstance().findAllObject("bookLoan",
+          Filters.and(Filters.eq("userId", userId), Filters.or(Filters.eq("status", "PENDING"), Filters.eq("status", "AVAILABLE"))));
+      long sum = 0;
+      for (Document d : docs) {
+        String type = d.getString("type");
+        if ("OFFLINE".equals(type)) {
+          sum += d.getInteger("numCopies", 0);
+        } else {
+          sum += 1;
+        }
+      }
+      return sum;
+    } catch (Exception e) {
+      return 0;
+    }
+  }
+
+  public static int getMaxBorrowLimit() {
+    return MAX_BORROW_LIMIT;
+  }
+
+  public static List<ReturnBookLoan> getPendingRequests(int start, int length) {
+    return bookLoanFromDocument(MongoDB.getInstance().findAllObject("bookLoan", Filters.eq("status", "PENDING"), start, length));
+  }
+
+  public static long countPendingRequests() {
+    return MongoDB.getInstance().countDocuments("bookLoan", Filters.eq("status", "PENDING"));
+  }
+
+  public static Document approveRequest(ObjectId id, String processedBy, String conditionNotes) {
+    try {
+      Document doc = MongoDB.getInstance().findAnObject("bookLoan", Filters.eq("_id", id));
+      if (doc == null) return null;
+      BookLoan request = new BookLoan(doc);
+      // check availability for OFFLINE
+      if (request.getType() == Mode.OFFLINE) {
+        Document cp = BookCopiesController.findCopy(new BookCopies(request.getBookId()));
+        int available = cp == null ? 0 : cp.getInteger("copies", 0);
+        if (available < request.getNumCopies()) {
+          return null;
+        }
+        // decrease copies
+        BookCopiesController.decreaseCopy(new BookCopies(request.getBookId(), request.getNumCopies()));
+      }
+      Date now = new Date();
+      Date dueDate = DateUtil.addDays(now, DEFAULT_LOAN_DAYS);
+      Map<String, Object> update = new HashMap<>();
+      update.put("valid", true);
+      update.put("status", BookLoan.Status.AVAILABLE.toString());
+      update.put("borrowDate", now);
+      update.put("dueDate", dueDate);
+      update.put("processedBy", processedBy);
+      update.put("processedAt", now);
+      update.put("conditionNotes", conditionNotes);
+      update.put("lastUpdated", new Timestamp(System.currentTimeMillis()));
+
+      return MongoDB.getInstance().updateData("bookLoan", "_id", id, update);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  public static Document rejectRequest(ObjectId id, String processedBy, String conditionNotes) {
+    try {
+      Date now = new Date();
+      Map<String, Object> update = new HashMap<>();
+      update.put("valid", false);
+      update.put("status", BookLoan.Status.REJECTED.toString());
+      update.put("processedBy", processedBy);
+      update.put("processedAt", now);
+      update.put("conditionNotes", conditionNotes);
+      update.put("lastUpdated", new Timestamp(System.currentTimeMillis()));
+      return MongoDB.getInstance().updateData("bookLoan", "_id", id, update);
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   public static Document editLoan(BookLoan bookLoan) {
@@ -128,6 +255,11 @@ public class BookLoanController {
       this.thumbnailBook = thumbnailBook;
       this.titleBook = titleBook;
     }
+
+    public BookLoan getBookLoan() { return this.bookLoan; }
+    public String getTitleBook() { return this.titleBook; }
+    public String getThumbnailBook() { return this.thumbnailBook; }
+    public void setBookLoan(BookLoan bookLoan) { this.bookLoan = bookLoan; }
   }
 
   private static List<ReturnBookLoan> bookLoanFromDocument(List<Document> documents) {
@@ -211,6 +343,10 @@ public class BookLoanController {
   public static List<ReturnBookLoan> getAllLentBookOf(String userId, int start, int length) {
     return bookLoanFromDocument(MongoDB.getInstance()
         .findAllObject("bookLoan", Filters.and(eq("userId", userId)), start, length));
+  }
+
+  public static long countAllLoansOfUser(String userId) {
+    return MongoDB.getInstance().countDocuments("bookLoan", Filters.eq("userId", userId));
   }
 
   public static long countLentBookOf(String userId) {

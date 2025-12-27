@@ -129,23 +129,33 @@ public class MyLoansController extends ControllerWithLoader {
   }
 
   private void loadLoans() {
+    // Ensure user is authenticated and present before loading loans
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+      AuthController.requireLogin();
+      return;
+    }
+
     Task<List<ReturnBookLoan>> task = new Task<>() {
       @Override
       protected List<ReturnBookLoan> call() {
         User currentUser = AuthController.getInstance().getCurrentUser();
-        boolean isValid = "Valid".equals(validity) || "All".equals(validity);
-        boolean isNotValid = "Invalid".equals(validity) || "All".equals(validity);
-        boolean isOnline = "Online".equals(mode) || "All".equals(mode);
-        boolean isOffline = "Offline".equals(mode) || "All".equals(mode);
-        totalResults = (int) BookLoanController.countLoanWithFilterOfUser(currentUser.getUid(),
-            isValid, isNotValid, isOnline,
-            isOffline);
+        try {
+          totalResults = (int) BookLoanController.countAllLoansOfUser(currentUser.getUid());
+        } catch (Exception e) {
+          totalResults = 0;
+          System.err.println("Error counting loans for user " + (currentUser != null ? currentUser.getUid() : "null"));
+          e.printStackTrace();
+        }
         nextPageButton.setDisable((currentPage + 1) * pageSizeValue >= totalResults);
         prevPageButton.setDisable(currentPage == 0);
-        //  System.out.println("Total results: " + totalResults);
-        return BookLoanController.getLoanWithFilterOfUser(currentUser.getUid(), isValid, isNotValid,
-            isOnline, isOffline,
-            currentPage * pageSizeValue, pageSizeValue);
+        try {
+          return BookLoanController.getAllLentBookOf(currentUser.getUid(), currentPage * pageSizeValue,
+              pageSizeValue);
+        } catch (Exception e) {
+          System.err.println("Error loading loans for user " + (currentUser != null ? currentUser.getUid() : "null"));
+          e.printStackTrace();
+          return new ArrayList<>();
+        }
       }
     };
 
@@ -153,15 +163,24 @@ public class MyLoansController extends ControllerWithLoader {
 
     task.setOnSucceeded(event -> {
       showLoading(false);
-      searchStatus.setText(task.getValue().size() + " results found");
+      List<ReturnBookLoan> vals = task.getValue();
+      if (vals == null) {
+        searchStatus.setText("0 results found");
+        loans.clear();
+        updateLoansFlowPane(loans);
+        return;
+      }
+      searchStatus.setText(vals.size() + " results found");
       loans.clear();
-      loans.addAll(task.getValue());
+      loans.addAll(vals);
       updateLoansFlowPane(loans);
     });
 
     task.setOnFailed(event -> {
       showLoading(false);
-      AlertDialog.showAlert("error", "Error", "Failed to load loans", null);
+      Throwable ex = task.getException();
+      if (ex != null) ex.printStackTrace();
+      AlertDialog.showAlert("error", "Error", "Failed to load loans: " + (ex != null ? ex.getMessage() : "Unknown"), null);
     });
 
     new Thread(task).start();
@@ -171,7 +190,22 @@ public class MyLoansController extends ControllerWithLoader {
     renderTasks.forEach(Task::cancel);
     renderTasks.clear();
     loansFlowPane.getChildren().clear();
-    for (ReturnBookLoan loan : loans) {
+    // Sort loans so that PENDING come first, then AVAILABLE (active), then EXPIRED, then RETURNED, then others
+    List<ReturnBookLoan> sortedLoans = new ArrayList<>(loans);
+    sortedLoans.sort((a, b) -> {
+      int pa = statusPriority(a.getBookLoan());
+      int pb = statusPriority(b.getBookLoan());
+      if (pa != pb) return Integer.compare(pa, pb);
+      // Tie breaker: newer request first
+      java.util.Date da = a.getBookLoan().getRequestDate();
+      java.util.Date db = b.getBookLoan().getRequestDate();
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return db.compareTo(da);
+    });
+
+    for (ReturnBookLoan loan : sortedLoans) {
       Task<HBox> task = new Task<>() {
         @Override
         protected HBox call() {
@@ -180,7 +214,9 @@ public class MyLoansController extends ControllerWithLoader {
       };
       task.setOnSucceeded(event -> loansFlowPane.getChildren().add(task.getValue()));
       task.setOnFailed(event -> {
-        AlertDialog.showAlert("error", "Error", "Failed to load loans", null);
+        Throwable ex = task.getException();
+        if (ex != null) ex.printStackTrace();
+        AlertDialog.showAlert("error", "Error", "Failed to load loan cell: " + (ex != null ? ex.getMessage() : "Unknown"), null);
       });
       new Thread(task).start();
 
@@ -198,7 +234,7 @@ public class MyLoansController extends ControllerWithLoader {
     title.setWrappingWidth(280);
     Text dates = new Text();
     Label type = new Label();
-    Label valid = new Label();
+    Label statusLabel = new Label();
     Text numCopies = new Text();
     title.setOnMouseClicked(event -> handleBookLoanClick(item.getBookLoan().getBookId(), content));
     title.getStyleClass().add("link");
@@ -207,25 +243,53 @@ public class MyLoansController extends ControllerWithLoader {
     Button returnButton = new Button("Return");
     Button reBorrowButton = new Button("Re-borrow");
     Button readButton = new Button("Read");
+    Button cancelRequestButton = new Button("Cancel");
 
     reBorrowButton.getStyleClass().addAll("btn", "btn-default");
     returnButton.getStyleClass().addAll("btn", "btn-danger");
     readButton.getStyleClass().addAll("btn", "btn-primary");
+    cancelRequestButton.getStyleClass().addAll("btn", "btn-danger");
 
-    thumbnail.setImage(new Image(item.getThumbnailBook()));
+    try {
+      String thumb = item.getThumbnailBook();
+      if (thumb != null && !thumb.isBlank()) {
+        thumbnail.setImage(new Image(thumb, true));
+      } else {
+        thumbnail.setImage(null);
+      }
+    } catch (Exception e) {
+      // Don't crash the cell render on bad image URLs
+      e.printStackTrace();
+      thumbnail.setImage(null);
+    }
     thumbnail.setFitHeight(180);
     thumbnail.setPreserveRatio(true);
     title.setText(item.getTitleBook());
     title.getStyleClass().add("bold");
     BookLoan loan = item.getBookLoan();
-    dates.setText(DateUtil.dateToString(loan.getBorrowDate()) + " - " + DateUtil.dateToString(
-        loan.getDueDate()));
+    if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
+      String req = loan.getRequestDate() != null ? DateUtil.dateToString(loan.getRequestDate()) : "N/A";
+      dates.setText("Requested: " + req);
+    } else {
+      String borrow = loan.getBorrowDate() != null ? DateUtil.dateToString(loan.getBorrowDate()) : "N/A";
+      String due = loan.getDueDate() != null ? DateUtil.dateToString(loan.getDueDate()) : "N/A";
+      dates.setText(borrow + " - " + due);
+    }
     type.setText(String.valueOf(loan.getType()));
     type.getStyleClass().addAll("chip", loan.getType().name().toLowerCase());
-    valid.setText(loan.isValid() ? "Valid" : "Expired");
-    valid.getStyleClass().add("chip");
-    valid.getStyleClass().add(loan.isValid() ? "success" : "danger");
-    HBox chips = new HBox(type, valid);
+    String statusText;
+    // Explicitly prioritize PENDING status
+    if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
+      statusText = "PENDING";
+    } else if (loan.getBorrowDate() != null && !loan.isValid()) {
+      // show RETURNED when the loan had a borrowDate but is no longer valid
+      statusText = "RETURNED";
+    } else {
+      statusText = loan.getStatus() != null ? loan.getStatus().name() : "PENDING";
+    }
+    statusLabel.setText(statusText);
+    statusLabel.getStyleClass().addAll("chip", statusText.toLowerCase());
+    HBox chips = new HBox(type, statusLabel);
 
     Region spacer = new Region();
     VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -236,12 +300,25 @@ public class MyLoansController extends ControllerWithLoader {
       numCopies.setVisible(false);
       numCopies.setManaged(false);
     }
-    if (loan.isValid()) {
+    // actions depend on status
+    if (BookLoan.Status.AVAILABLE.equals(loan.getStatus()) && loan.isValid()) {
+      // show return only when the loan is AVAILABLE and still valid (not already returned)
       returnButton.setVisible(true);
+      returnButton.setManaged(true);
       reBorrowButton.setVisible(false);
       reBorrowButton.setManaged(false);
       returnButton.setOnAction(event -> handleReturnBook(item));
+    } else if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
+      // pending - allow user to cancel their request
+      returnButton.setVisible(false);
+      returnButton.setManaged(false);
+      reBorrowButton.setVisible(false);
+      reBorrowButton.setManaged(false);
+      cancelRequestButton.setVisible(true);
+      cancelRequestButton.setManaged(true);
+      cancelRequestButton.setOnAction(event -> handleCancelRequest(item));
     } else {
+      // rejected or expired
       returnButton.setVisible(false);
       returnButton.setManaged(false);
       reBorrowButton.setVisible(true);
@@ -249,15 +326,18 @@ public class MyLoansController extends ControllerWithLoader {
           event -> handleBookLoanClick(item.getBookLoan().getBookId(), content));
     }
     if (Mode.ONLINE.equals(loan.getType())) {
-      readButton.setVisible(loan.isValid());
-      readButton.setManaged(loan.isValid());
+      readButton.setVisible(BookLoan.Status.AVAILABLE.equals(loan.getStatus()));
+      readButton.setManaged(BookLoan.Status.AVAILABLE.equals(loan.getStatus()));
       readButton.setOnAction(event -> handleReadBook(item));
     } else {
       readButton.setVisible(false);
       readButton.setManaged(false);
     }
 
-    actionButtons.getChildren().addAll(returnButton, reBorrowButton, readButton);
+    // hide cancel by default; only visible/managed for PENDING
+    cancelRequestButton.setVisible(false);
+    cancelRequestButton.setManaged(false);
+    actionButtons.getChildren().addAll(returnButton, reBorrowButton, readButton, cancelRequestButton);
     actionButtons.setSpacing(5);
     details.getChildren().addAll(title, dates, numCopies, chips, spacer, actionButtons);
     content.getChildren().addAll(thumbnail, details);
@@ -299,6 +379,48 @@ public class MyLoansController extends ControllerWithLoader {
     new Thread(task).start();
   }
 
+  private void handleCancelRequest(ReturnBookLoan item) {
+    BookLoan bookLoan = item.getBookLoan();
+    if (!BookLoan.Status.PENDING.equals(bookLoan.getStatus())) {
+      AlertDialog.showAlert("info", "Info", "Only pending requests can be cancelled.", null);
+      return;
+    }
+
+    if (!AlertDialog.showConfirm("Cancel request", "Are you sure you want to cancel this loan request?")) {
+      return;
+    }
+    Task<Document> task = new Task<>() {
+      @Override
+      protected Document call() {
+        String userId = AuthController.getInstance().getCurrentUser().getUid();
+        return BookLoanController.rejectRequest(bookLoan.get_id(), userId, "Canceled by user");
+      }
+    };
+
+    setLoadingText("Cancelling request...");
+
+    task.setOnRunning(event -> showLoading(true));
+
+    task.setOnSucceeded(event -> {
+      showLoading(false);
+      if (task.getValue() == null) {
+        AlertDialog.showAlert("error", "Cancel Failed", "Could not cancel request.", null);
+      } else {
+        AlertDialog.showAlert("success", "Cancelled", "Request cancelled.", null);
+        BookLoan updatedLoan = new BookLoan(task.getValue());
+        item.setBookLoan(updatedLoan);
+        updateLoanInFlowPane(item);
+      }
+    });
+
+    task.setOnFailed(event -> {
+      showLoading(false);
+      AlertDialog.showAlert("error", "Error", "Failed to cancel request", null);
+    });
+
+    new Thread(task).start();
+  }
+
   private void handleReBorrowBook(ReturnBookLoan item) {
 
   }
@@ -335,6 +457,23 @@ public class MyLoansController extends ControllerWithLoader {
     if ("Valid".equals(validity)) {
       loadLoans();
     }
+  }
+
+  /**
+   * Priority used for sorting loans in the UI.
+   * 0 = PENDING
+   * 1 = AVAILABLE and valid (currently borrowed)
+   * 2 = EXPIRED
+   * 3 = Returned (had borrowDate and now not valid)
+   * 4 = others (e.g., REJECTED)
+   */
+  private int statusPriority(BookLoan loan) {
+    if (loan == null) return 4;
+    if (BookLoan.Status.PENDING.equals(loan.getStatus())) return 0;
+    if (BookLoan.Status.AVAILABLE.equals(loan.getStatus()) && loan.isValid()) return 1;
+    if (BookLoan.Status.EXPIRED.equals(loan.getStatus())) return 2;
+    if (loan.getBorrowDate() != null && !loan.isValid()) return 3;
+    return 4;
   }
 
   private void handleBookLoanClick(String id, Parent container) {

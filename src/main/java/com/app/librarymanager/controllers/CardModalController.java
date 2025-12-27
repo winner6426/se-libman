@@ -40,6 +40,7 @@ public class CardModalController extends ControllerWithLoader {
   private LibraryCard card;
   @Setter
   private SaveCallback saveCallback;
+  public void setSaveCallback(SaveCallback saveCallback) { this.saveCallback = saveCallback; }
   private boolean isEditMode = false;
 
   @FXML

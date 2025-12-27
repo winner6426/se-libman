@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox spacing="10" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.librarymanager.controllers.ManageLoanRequestsController">
+  <HBox alignment="CENTER_RIGHT">
+    <Label text="Pending Loan Requests" styleClass="h3"/>
+  </HBox>
+  <TableView fx:id="requestsTable" prefHeight="400">
+    <columns>
+      <TableColumn fx:id="_idColumn" text="ID" />
+      <TableColumn fx:id="userEmailColumn" text="User Email" />
+      <TableColumn fx:id="userNameColumn" text="User Name" />
+      <TableColumn fx:id="bookTitleColumn" text="Book" />
+      <TableColumn fx:id="numCopiesColumn" text="Copies" />
+      <TableColumn fx:id="requestDateColumn" text="Requested At" />
+    </columns>
+  </TableView>
+  <HBox spacing="10" alignment="CENTER_LEFT">
+    <TextArea fx:id="conditionNotes" promptText="Condition notes (optional)" prefRowCount="3" />
+    <VBox spacing="5">
+      <Button fx:id="approveBtn" text="Approve" styleClass="btn, btn-primary" />
+      <Button fx:id="rejectBtn" text="Reject" styleClass="btn, btn-danger" />
+      <Button fx:id="refreshBtn" text="Refresh" styleClass="btn, btn-text" />
+    </VBox>
+  </HBox>
+</VBox>

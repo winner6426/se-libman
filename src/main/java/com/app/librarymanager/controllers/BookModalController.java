@@ -102,6 +102,7 @@ public class BookModalController extends ControllerWithLoader {
   private Book book;
   @Setter
   private SaveCallback saveCallback;
+  public void setSaveCallback(SaveCallback saveCallback) { this.saveCallback = saveCallback; }
   private Popup searchResultsPopup = new Popup();
 
   private boolean isEditMode = false;
