@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox spacing="8" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.app.librarymanager.controllers.LoanRecordModalController" styleClass="form">
+  <padding>
+    <Insets top="10" right="10" bottom="10" left="10"/>
+  </padding>
+  <HBox spacing="10">
+    <VBox spacing="6">
+      <Label text="Borrow Date"/>
+      <DatePicker fx:id="borrowDateField"/>
+
+      <Label text="Due Date"/>
+      <DatePicker fx:id="dueDateField"/>
+
+      <Label text="Type"/>
+      <ComboBox fx:id="typeField"/>
+
+      <Label text="Copies"/>
+      <TextField fx:id="copiesField"/>
+
+      <Label text="Valid"/>
+      <CheckBox fx:id="validField"/>
+    </VBox>
+    <VBox spacing="6">
+      <Label text="Status"/>
+      <ComboBox fx:id="statusField"/>
+
+      <Label text="Request Date"/>
+      <DatePicker fx:id="requestDateField"/>
+
+      <Label text="Processed By"/>
+      <TextField fx:id="processedByField"/>
+
+      <Label text="Processed At"/>
+      <DatePicker fx:id="processedAtField"/>
+    </VBox>
+    <VBox spacing="6">
+      <Label text="Return Requested"/>
+      <CheckBox fx:id="returnRequestedField"/>
+
+      <Label text="Return Requested At"/>
+      <DatePicker fx:id="returnRequestedAtField"/>
+
+      <Label text="Returned By"/>
+      <TextField fx:id="returnedByField"/>
+
+      <Label text="Returned At"/>
+      <DatePicker fx:id="returnedAtField"/>
+    </VBox>
+  </HBox>
+
+  <HBox spacing="10">
+    <VBox spacing="6" HBox.hgrow="ALWAYS">
+      <Label text="Return Condition"/>
+      <ComboBox fx:id="returnConditionField"/>
+
+      <Label text="Return Notes"/>
+      <TextArea fx:id="returnNotesField" prefRowCount="3"/>
+    </VBox>
+
+    <VBox spacing="6" HBox.hgrow="ALWAYS">
+      <Label text="Condition Notes"/>
+      <TextArea fx:id="conditionNotesField" prefRowCount="3"/>
+    </VBox>
+  </HBox>
+  <HBox spacing="10" alignment="CENTER_RIGHT">
+    <Button text="Save" fx:id="saveBtn" styleClass="btn,btn-primary" onAction="#onSubmit"/>
+    <Button text="Cancel" onAction="#onCancel" styleClass="btn,btn-text"/>
+  </HBox>
+</VBox>
