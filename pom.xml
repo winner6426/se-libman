@@ -103,6 +103,11 @@
       <artifactId>mongodb-driver-sync</artifactId>
       <version>5.2.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.mongodb</groupId>
+      <artifactId>bson</artifactId>
+      <version>5.2.0</version>
+    </dependency>
 
     <!-- https://mvnrepository.com/artifact/com.google.oauth-client/google-oauth-client-jetty -->
     <dependency>

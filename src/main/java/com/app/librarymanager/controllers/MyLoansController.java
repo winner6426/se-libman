@@ -240,7 +240,7 @@ public class MyLoansController extends ControllerWithLoader {
     title.getStyleClass().add("link");
     HBox actionButtons = new HBox();
     actionButtons.setAlignment(Pos.CENTER_LEFT);
-    Button returnButton = new Button("Return");
+    Button returnButton = new Button("Request Return");
     Button reBorrowButton = new Button("Re-borrow");
     Button readButton = new Button("Read");
     Button cancelRequestButton = new Button("Cancel");
@@ -277,19 +277,15 @@ public class MyLoansController extends ControllerWithLoader {
     }
     type.setText(String.valueOf(loan.getType()));
     type.getStyleClass().addAll("chip", loan.getType().name().toLowerCase());
-    String statusText;
-    // Explicitly prioritize PENDING status
-    if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
-      statusText = "PENDING";
-    } else if (loan.getBorrowDate() != null && !loan.isValid()) {
-      // show RETURNED when the loan had a borrowDate but is no longer valid
-      statusText = "RETURNED";
-    } else {
-      statusText = loan.getStatus() != null ? loan.getStatus().name() : "PENDING";
-    }
+    String statusText = BookLoanController.computeDisplayStatus(loan);
     statusLabel.setText(statusText);
     statusLabel.getStyleClass().addAll("chip", statusText.toLowerCase());
     HBox chips = new HBox(type, statusLabel);
+    if (loan.isReturnRequested()) {
+      Label returnReq = new Label("RETURN REQUESTED");
+      returnReq.getStyleClass().addAll("chip", "return-requested");
+      chips.getChildren().add(returnReq);
+    }
 
     Region spacer = new Region();
     VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -302,12 +298,12 @@ public class MyLoansController extends ControllerWithLoader {
     }
     // actions depend on status
     if (BookLoan.Status.AVAILABLE.equals(loan.getStatus()) && loan.isValid()) {
-      // show return only when the loan is AVAILABLE and still valid (not already returned)
+      // show request return when the loan is AVAILABLE and still valid (not already returned)
       returnButton.setVisible(true);
       returnButton.setManaged(true);
       reBorrowButton.setVisible(false);
       reBorrowButton.setManaged(false);
-      returnButton.setOnAction(event -> handleReturnBook(item));
+      returnButton.setOnAction(event -> handleRequestReturn(item));
     } else if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
       // pending - allow user to cancel their request
       returnButton.setVisible(false);
@@ -350,7 +346,12 @@ public class MyLoansController extends ControllerWithLoader {
   }
 
   private void handleReturnBook(ReturnBookLoan item) {
-    if (!AlertDialog.showConfirm("Return book", "Are you sure you want to return this book?")) {
+    // deprecated: direct returning is now handled by librarians
+    AlertDialog.showAlert("info", "Info", "Returning books must be processed by librarians. Use Request Return instead.", null);
+  }
+
+  private void handleRequestReturn(ReturnBookLoan item) {
+    if (!AlertDialog.showConfirm("Request return", "Are you sure you want to request a return for this loan?")) {
       return;
     }
 
@@ -358,22 +359,26 @@ public class MyLoansController extends ControllerWithLoader {
     Task<Document> task = new Task<>() {
       @Override
       protected Document call() {
-        return BookLoanController.returnBook(bookLoan);
+        return BookLoanController.requestReturn(bookLoan.get_id());
       }
     };
 
-    setLoadingText("Returning book...");
+    setLoadingText("Requesting return...");
 
     task.setOnSucceeded(event -> {
-      AlertDialog.showAlert("success", "Success", "Book returned successfully", null);
+      setLoadingText(null);
+      AlertDialog.showAlert("success", "Success", "Return requested. A librarian will process this return.", null);
       Document result = task.getValue();
-      BookLoan bookLoanReturned = new BookLoan(result);
-      item.setBookLoan(bookLoanReturned);
-      updateLoanInFlowPane(item);
+      if (result != null) {
+        BookLoan updated = new BookLoan(result);
+        item.setBookLoan(updated);
+        updateLoanInFlowPane(item);
+      }
     });
 
     task.setOnFailed(event -> {
-      AlertDialog.showAlert("error", "Error", "Failed to return book", null);
+      setLoadingText(null);
+      AlertDialog.showAlert("error", "Error", "Failed to request return", null);
     });
 
     new Thread(task).start();

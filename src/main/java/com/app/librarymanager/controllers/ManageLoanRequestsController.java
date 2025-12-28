@@ -109,19 +109,27 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
             .map(v -> v.getBookLoan() != null ? v.getBookLoan().getUserId() : null)
             .filter(id -> id != null)
             .toList();
-        List<User> users = UserController.listUsers(ids);
-        Map<String, User> userMap = users != null ? users.stream().collect(Collectors.toMap(User::getUid, u -> u)) : new java.util.HashMap<>();
+        List<User> users = null;
+        try {
+          users = UserController.listUsers(ids);
+        } catch (Throwable t) {
+          System.err.println("ManageLoanRequestsController: UserController.listUsers threw: " + t.getMessage());
+          t.printStackTrace();
+        }
+        // merge duplicates by uid when collecting
+        Map<String, User> userMap = users != null ? users.stream().collect(Collectors.toMap(User::getUid, u -> u, (u1, u2) -> u1)) : new java.util.HashMap<>();
         for (ReturnBookLoan r : vals) {
           User u = null;
           if (r.getBookLoan() != null) u = userMap.get(r.getBookLoan().getUserId());
           requests.add(new RequestRow(r, u));
         }
-      } catch (Exception ex) {
+      } catch (Throwable ex) {
+        System.err.println("ManageLoanRequestsController.loadRequests: unexpected throwable: " + ex.getMessage());
         ex.printStackTrace();
         for (ReturnBookLoan r : vals) {
           try {
             requests.add(new RequestRow(r, null));
-          } catch (Exception inner) {
+          } catch (Throwable inner) {
             inner.printStackTrace();
           }
         }

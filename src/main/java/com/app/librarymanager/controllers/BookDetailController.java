@@ -358,9 +358,11 @@ public class BookDetailController extends ControllerWithLoader {
           long current = BookLoanController.countBorrowedCopiesOfUser(
               AuthController.getInstance().getCurrentUser().getUid());
           if (current + 1 > BookLoanController.getMaxBorrowLimit()) {
-            AlertDialog.showAlert("error", "Borrow limit exceeded",
-                "You have reached the maximum number of borrowed books (" + BookLoanController.getMaxBorrowLimit() + ")\nCurrent borrowed: " + current,
-                null);
+            int max = BookLoanController.getMaxBorrowLimit();
+            int requested = 1;
+            int remaining = Math.max(0, max - (int) current);
+            String msg = String.format("You cannot request this loan: requested=%d, current=%d, max=%d, remainingSlots=%d", requested, current, max, remaining);
+            AlertDialog.showAlert("error", "Borrow limit exceeded", msg, null);
             return;
           }
           // create a loan request (pending) for admin approval
@@ -508,9 +510,11 @@ public class BookDetailController extends ControllerWithLoader {
         long current = BookLoanController.countBorrowedCopiesOfUser(
           AuthController.getInstance().getCurrentUser().getUid());
         if (current + numCopies > BookLoanController.getMaxBorrowLimit()) {
-        AlertDialog.showAlert("error", "Borrow limit exceeded",
-          "You have reached the maximum number of borrowed books (" +
-            BookLoanController.getMaxBorrowLimit() + ").", null);
+        int max = BookLoanController.getMaxBorrowLimit();
+        int requested = numCopies;
+        int remaining = Math.max(0, max - (int) current);
+        String msg = String.format("You cannot request this loan: requested=%d, current=%d, max=%d, remainingSlots=%d", requested, current, max, remaining);
+        AlertDialog.showAlert("error", "Borrow limit exceeded", msg, null);
         return;
         }
       Document doc = BookLoanController.createLoanRequest(bookLoan);

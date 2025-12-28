@@ -32,6 +32,7 @@
         <TableColumn fx:id="bookThumbnailColumn" text="Book Thumbnail"/>
         <TableColumn fx:id="bookTitleColumn" text="Book Title"/>
         <TableColumn fx:id="borrowDateColumn" text="Borrow Date"/>
+        <TableColumn fx:id="statusColumn" text="Status"/>
         <TableColumn fx:id="typeColumn" text="Type"/>
         <TableColumn fx:id="numOfCopiesColumn" text="Copies"/>
         <TableColumn fx:id="dueDateColumn" text="Due Date"/>

@@ -21,7 +21,8 @@ public class BookLoan extends BookUser {
     PENDING,
     AVAILABLE,
     REJECTED,
-    EXPIRED
+    EXPIRED,
+    RETURNED
   }
 
   private Date borrowDate;
@@ -34,6 +35,13 @@ public class BookLoan extends BookUser {
   private String processedBy;
   private java.util.Date processedAt;
   private String conditionNotes;
+  // Return related fields
+  private boolean returnRequested;
+  private java.util.Date returnRequestedAt;
+  private String returnedBy; // librarian who processed return
+  private java.util.Date returnedAt;
+  private String returnCondition; // e.g., LATE, DAMAGED, LOST, NORMAL
+  private String returnConditionNotes;
 
   public BookLoan() {
     super();
@@ -154,6 +162,12 @@ public class BookLoan extends BookUser {
     document.put("processedBy", processedBy);
     document.put("processedAt", processedAt);
     document.put("conditionNotes", conditionNotes);
+    document.put("returnRequested", returnRequested);
+    document.put("returnRequestedAt", returnRequestedAt);
+    document.put("returnedBy", returnedBy);
+    document.put("returnedAt", returnedAt);
+    document.put("returnCondition", returnCondition);
+    document.put("returnConditionNotes", returnConditionNotes);
     return document;
   }
 
@@ -174,6 +188,13 @@ public class BookLoan extends BookUser {
     this.processedBy = document.getString("processedBy");
     this.processedAt = document.getDate("processedAt");
     this.conditionNotes = document.getString("conditionNotes");
+    // Return related
+    this.returnRequested = document.getBoolean("returnRequested") == null ? false : document.getBoolean("returnRequested");
+    this.returnRequestedAt = document.getDate("returnRequestedAt");
+    this.returnedBy = document.getString("returnedBy");
+    this.returnedAt = document.getDate("returnedAt");
+    this.returnCondition = document.getString("returnCondition");
+    this.returnConditionNotes = document.getString("returnConditionNotes");
   }
 
   // Explicit getters for compilation safety
@@ -196,6 +217,26 @@ public class BookLoan extends BookUser {
   public String getConditionNotes() {
     return this.conditionNotes;
   }
+
+  public boolean isReturnRequested() { return this.returnRequested; }
+  public java.util.Date getReturnRequestedAt() { return this.returnRequestedAt; }
+  public String getReturnedBy() { return this.returnedBy; }
+  public java.util.Date getReturnedAt() { return this.returnedAt; }
+  public String getReturnCondition() { return this.returnCondition; }
+  public String getReturnConditionNotes() { return this.returnConditionNotes; }
+
+  public void setReturnRequested(boolean v) { this.returnRequested = v; }
+  public void setReturnRequestedAt(java.util.Date d) { this.returnRequestedAt = d; }
+  public void setReturnedBy(String s) { this.returnedBy = s; }
+  public void setReturnedAt(java.util.Date d) { this.returnedAt = d; }
+  public void setReturnCondition(String s) { this.returnCondition = s; }
+  public void setReturnConditionNotes(String s) { this.returnConditionNotes = s; }
+
+  public void setProcessedBy(String s) { this.processedBy = s; }
+  public void setProcessedAt(java.util.Date d) { this.processedAt = d; }
+  public void setRequestDate(java.util.Date d) { this.requestDate = d; }
+  public void setStatus(Status s) { this.status = s; }
+  public void setConditionNotes(String s) { this.conditionNotes = s; }
 
   // Additional explicit accessors
   public java.util.Date getBorrowDate() { return this.borrowDate; }

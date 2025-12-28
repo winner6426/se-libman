@@ -46,6 +46,8 @@ public class ManageBookLoansController extends ControllerWithLoader {
   @FXML
   private TableColumn<BookLoanUser, String> borrowDateColumn;
   @FXML
+  private TableColumn<BookLoanUser, String> statusColumn;
+  @FXML
   private TableColumn<BookLoanUser, String> dueDateColumn;
   @FXML
   private TableColumn<BookLoanUser, Boolean> validColumn;
@@ -92,6 +94,8 @@ bookThumbnailColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     cellData.getValue().getBook() != null ? cellData.getValue().getBook().getThumbnail() : ""));
 borrowDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     DateUtil.dateToString(cellData.getValue().getBookLoan().getBorrowDate())));
+  statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+    BookLoanController.computeDisplayStatus(cellData.getValue().getBookLoan())));
 dueDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     DateUtil.dateToString(cellData.getValue().getBookLoan().getDueDate())));
 validColumn.setCellValueFactory(cellData -> new SimpleBooleanProperty(

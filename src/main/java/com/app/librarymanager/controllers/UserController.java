@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class UserController {
@@ -203,48 +202,59 @@ public class UserController {
       checkPermission();
       List<User> users = new ArrayList<>();
       // Use FirebaseAdmin's iterator to avoid converting to JSON and potential runtime issues
-      Iterable<ExportedUserRecord> iterable = FirebaseAuth.getInstance().listUsers(null).iterateAll();
-      for (ExportedUserRecord ur : iterable) {
-        try {
-          User user = userFromExportedRecord(ur);
-          users.add(user);
-        } catch (Exception inner) {
-          System.err.println("UserController.listUsers: failed to convert an ExportedUserRecord: " + inner.getMessage());
-          inner.printStackTrace();
+      try {
+        Iterable<ExportedUserRecord> iterable = FirebaseAuth.getInstance().listUsers(null).iterateAll();
+        for (ExportedUserRecord ur : iterable) {
+          try {
+            User user = userFromExportedRecord(ur);
+            users.add(user);
+          } catch (Throwable inner) {
+            System.err.println("UserController.listUsers: failed to convert an ExportedUserRecord: " + inner.getMessage());
+            inner.printStackTrace();
+          }
         }
+      } catch (Throwable t) {
+        // Could not iterate using Admin SDK; log and return empty list rather than crash the UI
+        System.err.println("UserController.listUsers: failed to list via Admin SDK (" + t.getClass().getName() + "): " + t);
+        t.printStackTrace();
+        return users;
       }
       return users;
-    } catch (Exception e) {
-      //  System.err.println(e.getMessage());
+    } catch (Throwable e) {
+      System.err.println("UserController.listUsers: unexpected throwable: " + e.getMessage());
       e.printStackTrace();
-      return null;
+      return new ArrayList<>();
     }
   }
 
   public static List<User> listUsers(List<String> ids) {
     try {
+      System.err.println("UserController.listUsers: called with ids=" + (ids == null ? 0 : ids.size()));
       List<User> users = new ArrayList<>();
+      if (ids == null) return users;
       for (String id : ids) {
         if (id == null || id.isEmpty()) {
           continue;
         }
         try {
-          UserRecord userRecord = FirebaseAuth.getInstance().getUser(id);
-          if (userRecord == null) {
+          // Use the safe getUser method which has internal fallbacks
+          User user = getUser(id);
+          if (user == null) {
+            System.err.println("UserController.listUsers: no user found for id=" + id);
             continue;
           }
-          User user = userFromRecord(userRecord);
           users.add(user);
-        } catch (Exception inner) {
-          System.err.println("UserController.listUsers(ids): failed to fetch/convert user " + id + ": " + inner.getMessage());
+        } catch (Throwable inner) {
+          System.err.println("UserController.listUsers(ids): failed to fetch/convert user " + id + " (" + inner.getClass().getName() + "): " + inner);
           inner.printStackTrace();
           // continue with others
         }
       }
       return users;
-    } catch (Exception e) {
-        System.err.println("aaa" + e.getMessage());
-      return null;
+    } catch (Throwable e) {
+      System.err.println("UserController.listUsers: unexpected throwable: " + e.getMessage());
+      e.printStackTrace();
+      return new ArrayList<>();
     }
   }
 
