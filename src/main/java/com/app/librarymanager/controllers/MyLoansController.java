@@ -247,6 +247,10 @@ public class MyLoansController extends ControllerWithLoader {
     Text title = new Text();
     title.setWrappingWidth(280);
     Text dates = new Text();
+    Text borrowNotes = new Text();
+    borrowNotes.setWrappingWidth(280);
+    Text returnNotes = new Text();
+    returnNotes.setWrappingWidth(280);
     Label type = new Label();
     Label statusLabel = new Label();
     Text numCopies = new Text();
@@ -289,6 +293,9 @@ public class MyLoansController extends ControllerWithLoader {
       String due = loan.getDueDate() != null ? DateUtil.dateToString(loan.getDueDate()) : "N/A";
       dates.setText(borrow + " - " + due);
     }
+    // show borrow/return notes if available
+    borrowNotes.setText(loan.getBorrowConditionNotes() != null ? "Borrow notes: " + loan.getBorrowConditionNotes() : "");
+    returnNotes.setText(loan.getReturnConditionNotes() != null ? "Return notes: " + loan.getReturnConditionNotes() : "");
     type.setText(String.valueOf(loan.getType()));
     type.getStyleClass().addAll("chip", loan.getType().name().toLowerCase());
     String statusText = BookLoanController.computeDisplayStatus(loan);
@@ -343,7 +350,7 @@ public class MyLoansController extends ControllerWithLoader {
     cancelRequestButton.setManaged(false);
     actionButtons.getChildren().addAll(returnButton, reBorrowButton, readButton, cancelRequestButton);
     actionButtons.setSpacing(5);
-    details.getChildren().addAll(title, dates, numCopies, chips, spacer, actionButtons);
+    details.getChildren().addAll(title, dates, borrowNotes, returnNotes, numCopies, chips, spacer, actionButtons);
     content.getChildren().addAll(thumbnail, details);
     content.setSpacing(10);
     chips.setSpacing(5);

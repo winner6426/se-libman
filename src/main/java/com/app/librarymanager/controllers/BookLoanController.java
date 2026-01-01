@@ -444,7 +444,7 @@ public class BookLoanController {
   /**
    * Process return by librarian. Creates a ReturnRecord, optionally a Penalty, updates copies and loan.
    */
-  public static Document processReturn(ObjectId loanId, String processedBy, String condition, String conditionNotes, Double penaltyAmount) {
+  public static Document processReturn(ObjectId loanId, String processedBy, String condition, String conditionNotes, String borrowConditionNotes, Double penaltyAmount) {
     try {
       Document doc = MongoDB.getInstance().findAnObject("bookLoan", Filters.eq("_id", loanId));
       if (doc == null) return null;
@@ -461,6 +461,8 @@ public class BookLoanController {
       update.put("returnedAt", now);
       update.put("returnCondition", condition);
       update.put("returnConditionNotes", conditionNotes);
+      // allow librarian to record/override borrow notes at return time
+      if (borrowConditionNotes != null) update.put("borrowConditionNotes", borrowConditionNotes);
       update.put("returnRequested", false);
       update.put("lastUpdated", new Timestamp(System.currentTimeMillis()));
       Document updatedLoan = MongoDB.getInstance().updateData("bookLoan", "_id", loanId, update);

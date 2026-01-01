@@ -32,10 +32,13 @@
         <TableColumn fx:id="bookThumbnailColumn" text="Book Thumbnail"/>
         <TableColumn fx:id="bookTitleColumn" text="Book Title"/>
         <TableColumn fx:id="borrowDateColumn" text="Borrow Date"/>
+        <TableColumn fx:id="borrowConditionNotesColumn" text="Borrow Notes"/>
+        <TableColumn fx:id="returnConditionColumn" text="Return Condition"/>
         <TableColumn fx:id="statusColumn" text="Status"/>
         <TableColumn fx:id="typeColumn" text="Type"/>
         <TableColumn fx:id="numOfCopiesColumn" text="Copies"/>
         <TableColumn fx:id="dueDateColumn" text="Due Date"/>
+        <TableColumn fx:id="returnConditionNotesColumn" text="Return Notes"/>
         <TableColumn fx:id="validColumn" text="Valid"/>
         <TableColumn fx:id="createdAtColumn" text="Created At"/>
         <TableColumn fx:id="lastUpdatedColumn" text="Last Updated"/>

@@ -22,8 +22,6 @@
       <HBox spacing="10" alignment="CENTER_LEFT">
         <TextArea fx:id="conditionNotes" promptText="Condition notes (optional)" prefRowCount="3" />
         <VBox spacing="5">
-          <Label text="Borrow Condition" />
-          <ComboBox fx:id="borrowCondition" prefWidth="160" />
           <Button fx:id="approveBtn" text="Approve" styleClass="btn, btn-primary" />
           <Button fx:id="rejectBtn" text="Reject" styleClass="btn, btn-danger" />
           <Button fx:id="refreshBtn" text="Refresh" styleClass="btn, btn-text" />

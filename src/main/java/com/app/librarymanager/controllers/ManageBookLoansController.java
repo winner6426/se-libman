@@ -46,9 +46,15 @@ public class ManageBookLoansController extends ControllerWithLoader {
   @FXML
   private TableColumn<BookLoanUser, String> borrowDateColumn;
   @FXML
+  private TableColumn<BookLoanUser, String> borrowConditionNotesColumn;
+  @FXML
+  private TableColumn<BookLoanUser, String> returnConditionColumn;
+  @FXML
   private TableColumn<BookLoanUser, String> statusColumn;
   @FXML
   private TableColumn<BookLoanUser, String> dueDateColumn;
+  @FXML
+  private TableColumn<BookLoanUser, String> returnConditionNotesColumn;
   @FXML
   private TableColumn<BookLoanUser, Boolean> validColumn;
   @FXML
@@ -94,10 +100,16 @@ bookThumbnailColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     cellData.getValue().getBook() != null ? cellData.getValue().getBook().getThumbnail() : ""));
 borrowDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     DateUtil.dateToString(cellData.getValue().getBookLoan().getBorrowDate())));
+  borrowConditionNotesColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+    cellData.getValue().getBookLoan().getBorrowConditionNotes() == null ? "" : cellData.getValue().getBookLoan().getBorrowConditionNotes()));
   statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     BookLoanController.computeDisplayStatus(cellData.getValue().getBookLoan())));
 dueDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
     DateUtil.dateToString(cellData.getValue().getBookLoan().getDueDate())));
+  returnConditionNotesColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+    cellData.getValue().getBookLoan().getReturnConditionNotes() == null ? "" : cellData.getValue().getBookLoan().getReturnConditionNotes()));
+  returnConditionColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+    cellData.getValue().getBookLoan().getReturnCondition() == null ? "" : cellData.getValue().getBookLoan().getReturnCondition()));
 validColumn.setCellValueFactory(cellData -> new SimpleBooleanProperty(
     cellData.getValue().getBookLoan().isValid()));
 typeColumn.setCellValueFactory(cellData -> new SimpleStringProperty(

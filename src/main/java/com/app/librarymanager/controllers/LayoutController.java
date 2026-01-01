@@ -63,8 +63,6 @@ public class LayoutController implements AuthStateListener {
   @FXML
   private TextField searchField;
   @FXML
-  private Button loanRecordsBtn;
-  @FXML
   private ImageView navLogo;
 
 
@@ -91,17 +89,7 @@ public class LayoutController implements AuthStateListener {
             "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
             "/views/admin/manage-loans.fxml", "/views/admin/manage-returns.fxml", "/views/admin/manage-categories.fxml",
             "/views/admin/manage-cards.fxml");
-        if (FeatureFlags.isLoanRecordsEnabled()) {
-          // insert loan-records route after manage-loans
-          ADMIN_ROUTES = new java.util.ArrayList<>(ADMIN_ROUTES);
-          ((java.util.ArrayList<String>) ADMIN_ROUTES).add(4, "/views/admin/manage-loan-records.fxml");
-          // make button visible
-          loanRecordsBtn.setVisible(true);
-          loanRecordsBtn.setManaged(true);
-        } else {
-          loanRecordsBtn.setVisible(false);
-          loanRecordsBtn.setManaged(false);
-        }
+        // Loan Records feature removed from UI per request - no route added
 
         loadComponent("/views/admin/dashboard.fxml");
 
@@ -298,16 +286,7 @@ public class LayoutController implements AuthStateListener {
     loadComponent("/views/admin/manage-loan-requests.fxml");
   }
 
-  @FXML
-  void handleManageLoanRecords(Event e) {
-    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
-        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
-      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Loan Records.", null);
-      return;
-    }
-    handleChangeActiveButton(e);
-    loadComponent("/views/admin/manage-loan-records.fxml");
-  }
+  // Loan Records handler removed per request
 
   @FXML
   void handleManageReturns(Event e) {
