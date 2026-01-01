@@ -54,6 +54,8 @@ public class MyLoansController extends ControllerWithLoader {
   @FXML
   private ComboBox<String> modeFilter;
   @FXML
+  private ComboBox<String> statusFilter;
+  @FXML
   private ComboBox<String> validityFilter;
   @FXML
   private ComboBox<Integer> pageSize;
@@ -78,6 +80,8 @@ public class MyLoansController extends ControllerWithLoader {
     validityFilter.setValue(validity);
     modeFilter.getItems().addAll("All", "Online", "Offline");
     modeFilter.setValue(mode);
+    statusFilter.getItems().addAll("All", "PENDING", "AVAILABLE", "REJECTED", "EXPIRED", "RETURNED");
+    statusFilter.setValue("All");
     pageSize.getItems().addAll(5, 10, 15, 20);
     pageSize.setValue(10);
     loansScrollPane.addEventFilter(ScrollEvent.SCROLL, event -> {
@@ -118,6 +122,11 @@ public class MyLoansController extends ControllerWithLoader {
     modeFilter.valueProperty().addListener((observable, oldValue, newValue) -> {
       currentPage = 0;
       mode = newValue;
+      loadLoans();
+    });
+
+    statusFilter.valueProperty().addListener((observable, oldValue, newValue) -> {
+      currentPage = 0;
       loadLoans();
     });
 
@@ -169,6 +178,11 @@ public class MyLoansController extends ControllerWithLoader {
         loans.clear();
         updateLoansFlowPane(loans);
         return;
+      }
+      // apply status filter on client-side
+      String statusFilterValue = statusFilter != null ? statusFilter.getValue() : "All";
+      if (statusFilterValue != null && !"All".equals(statusFilterValue)) {
+        vals = vals.stream().filter(r -> r.getBookLoan() != null && r.getBookLoan().getStatus() != null && r.getBookLoan().getStatus().toString().equalsIgnoreCase(statusFilterValue)).toList();
       }
       searchStatus.setText(vals.size() + " results found");
       loans.clear();
@@ -297,14 +311,7 @@ public class MyLoansController extends ControllerWithLoader {
       numCopies.setManaged(false);
     }
     // actions depend on status
-    if (BookLoan.Status.AVAILABLE.equals(loan.getStatus()) && loan.isValid()) {
-      // show request return when the loan is AVAILABLE and still valid (not already returned)
-      returnButton.setVisible(true);
-      returnButton.setManaged(true);
-      reBorrowButton.setVisible(false);
-      reBorrowButton.setManaged(false);
-      returnButton.setOnAction(event -> handleRequestReturn(item));
-    } else if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
+    if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
       // pending - allow user to cancel their request
       returnButton.setVisible(false);
       returnButton.setManaged(false);
@@ -315,6 +322,7 @@ public class MyLoansController extends ControllerWithLoader {
       cancelRequestButton.setOnAction(event -> handleCancelRequest(item));
     } else {
       // rejected or expired
+      // hide return button by default for users - returns are processed by librarians
       returnButton.setVisible(false);
       returnButton.setManaged(false);
       reBorrowButton.setVisible(true);

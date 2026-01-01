@@ -41,6 +41,10 @@ public class ManageLoanRecordsController extends ControllerWithLoader {
   @FXML
   private TableColumn<BookLoanUser, String> borrowDateColumn;
   @FXML
+  private TableColumn<BookLoanUser, String> borrowConditionColumn;
+  @FXML
+  private TableColumn<BookLoanUser, String> borrowConditionNotesColumn;
+  @FXML
   private TableColumn<BookLoanUser, String> statusColumn;
   @FXML
   private TableColumn<BookLoanUser, String> dueDateColumn;
@@ -86,6 +90,10 @@ public class ManageLoanRecordsController extends ControllerWithLoader {
         cellData.getValue().getBook() != null ? cellData.getValue().getBook().getTitle() : "[REMOVED BOOK]"));
     borrowDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
         DateUtil.dateToString(cellData.getValue().getBookLoan().getBorrowDate())));
+    borrowConditionColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+      cellData.getValue().getBookLoan().getBorrowCondition() == null ? "" : cellData.getValue().getBookLoan().getBorrowCondition()));
+    borrowConditionNotesColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
+      cellData.getValue().getBookLoan().getBorrowConditionNotes() == null ? "" : cellData.getValue().getBookLoan().getBorrowConditionNotes()));
     statusColumn.setCellValueFactory(cellData -> new SimpleStringProperty(
         BookLoanController.computeDisplayStatus(cellData.getValue().getBookLoan())));
     dueDateColumn.setCellValueFactory(cellData -> new SimpleStringProperty(

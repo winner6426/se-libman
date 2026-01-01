@@ -203,7 +203,8 @@ public class UserController {
       List<User> users = new ArrayList<>();
       // Use FirebaseAdmin's iterator to avoid converting to JSON and potential runtime issues
       try {
-        Iterable<ExportedUserRecord> iterable = FirebaseAuth.getInstance().listUsers(null).iterateAll();
+        // Use getValues() for compatibility with the firebase-admin version used at runtime
+        Iterable<ExportedUserRecord> iterable = FirebaseAuth.getInstance().listUsers(null).getValues();
         for (ExportedUserRecord ur : iterable) {
           try {
             User user = userFromExportedRecord(ur);
@@ -220,6 +221,16 @@ public class UserController {
         return users;
       }
       return users;
+    } catch (Error err) {
+      // Explicitly catch Errors (including compilation stubs thrown by some build systems)
+      System.err.println("UserController.listUsers: Caught Error (" + err.getClass().getName() + "): " + err);
+      try {
+        java.net.URL src = UserController.class.getProtectionDomain().getCodeSource().getLocation();
+        System.err.println("UserController.class loaded from: " + src);
+      } catch (Throwable ignore) {
+      }
+      err.printStackTrace();
+      return new ArrayList<>();
     } catch (Throwable e) {
       System.err.println("UserController.listUsers: unexpected throwable: " + e.getMessage());
       e.printStackTrace();
@@ -251,6 +262,15 @@ public class UserController {
         }
       }
       return users;
+    } catch (Error err) {
+      System.err.println("UserController.listUsers(ids): Caught Error (" + err.getClass().getName() + "): " + err);
+      try {
+        java.net.URL src = UserController.class.getProtectionDomain().getCodeSource().getLocation();
+        System.err.println("UserController.class loaded from: " + src);
+      } catch (Throwable ignore) {
+      }
+      err.printStackTrace();
+      return new ArrayList<>();
     } catch (Throwable e) {
       System.err.println("UserController.listUsers: unexpected throwable: " + e.getMessage());
       e.printStackTrace();

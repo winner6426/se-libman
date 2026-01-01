@@ -19,6 +19,12 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ButtonBar;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 
@@ -34,6 +40,8 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
   private TableColumn<ReturnRow, String> userNameColumn;
   @FXML
   private TableColumn<ReturnRow, String> bookTitleColumn;
+  @FXML
+  private TableColumn<ReturnRow, String> borrowConditionColumn;
   @FXML
   private TableColumn<ReturnRow, String> borrowDateColumn;
   @FXML
@@ -66,6 +74,9 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
     ));
     bookTitleColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
         cell.getValue() != null && cell.getValue().getLoan() != null ? cell.getValue().getLoan().getTitleBook() : "N/A"));
+    borrowConditionColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+      cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ?
+        (cell.getValue().getLoan().getBookLoan().getBorrowCondition() != null ? cell.getValue().getLoan().getBookLoan().getBorrowCondition() : "") : ""));
     borrowDateColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
         cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ? DateUtil.dateToString(cell.getValue().getLoan().getBookLoan().getBorrowDate()) : "N/A"
     ));
@@ -85,6 +96,24 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
         penaltyAmount.clear();
       }
     });
+
+      // context menu to process returns via right-click
+      loansTable.setRowFactory(tableView -> {
+        final TableRow<ReturnRow> row = new TableRow<>();
+        final ContextMenu contextMenu = new ContextMenu();
+        final MenuItem processItem = new MenuItem("Process Return");
+        processItem.setOnAction(e -> {
+          ReturnRow rr = row.getItem();
+          if (rr != null) openProcessReturnDialog(rr);
+        });
+        final MenuItem refreshItem = new MenuItem("Refresh");
+        refreshItem.setOnAction(e -> loadLoans());
+        contextMenu.getItems().addAll(processItem, refreshItem);
+        row.contextMenuProperty().bind(
+            javafx.beans.binding.Bindings.when(row.emptyProperty()).then((ContextMenu) null)
+                .otherwise(contextMenu));
+        return row;
+      });
 
     processReturnBtn.setOnAction(e -> onProcessReturn());
     loadLoans();
@@ -204,6 +233,68 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
     });
     task.setOnFailed(e -> { showLoading(false); AlertDialog.showAlert("error", "Error", "Failed to process return.", null); });
     new Thread(task).start();
+  }
+
+  private void openProcessReturnDialog(ReturnRow row) {
+    try {
+      Dialog<Void> dialog = new Dialog<>();
+      dialog.setTitle("Process Return");
+      dialog.initOwner(loansTable.getScene().getWindow());
+
+      javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(8);
+      content.setPadding(new javafx.geometry.Insets(10));
+      javafx.scene.text.Text info = new javafx.scene.text.Text("User: " + (row.getUser() != null ? row.getUser().getDisplayName() + " (" + row.getUser().getEmail() + ")" : row.getLoan().getBookLoan().getUserId()));
+      javafx.scene.text.Text book = new javafx.scene.text.Text("Book: " + row.getLoan().getTitleBook());
+      javafx.scene.control.Label returnCondLabel = new javafx.scene.control.Label("Return Condition");
+      javafx.scene.control.ComboBox<String> returnCond = new javafx.scene.control.ComboBox<>();
+      returnCond.getItems().addAll("NORMAL", "LATE", "DAMAGED", "LOST");
+      returnCond.setValue("NORMAL");
+      javafx.scene.control.Label notesLabel = new javafx.scene.control.Label("Condition Notes");
+      javafx.scene.control.TextArea notesArea = new javafx.scene.control.TextArea();
+      notesArea.setPrefRowCount(3);
+      javafx.scene.control.Label penaltyLabel = new javafx.scene.control.Label("Penalty Amount");
+      javafx.scene.control.TextField penaltyField = new javafx.scene.control.TextField();
+
+      content.getChildren().addAll(info, book, returnCondLabel, returnCond, notesLabel, notesArea, penaltyLabel, penaltyField);
+
+      dialog.getDialogPane().setContent(content);
+      ButtonType processType = new ButtonType("Process", ButtonBar.ButtonData.OK_DONE);
+      ButtonType cancelType = ButtonType.CANCEL;
+      dialog.getDialogPane().getButtonTypes().addAll(processType, cancelType);
+
+      javafx.scene.control.Button processBtn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(processType);
+      processBtn.getStyleClass().addAll("btn", "btn-primary");
+      processBtn.addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
+        final String cond = returnCond.getValue();
+        final String notes = notesArea.getText();
+        String p = penaltyField.getText();
+        Double parsedPenalty = null;
+        try {
+          if (p != null && !p.isBlank()) parsedPenalty = Double.parseDouble(p);
+        } catch (Exception ex) {
+          parsedPenalty = null;
+        }
+        final Double penalty = parsedPenalty;
+        final ObjectId id = row.getLoan().getBookLoan().get_id();
+        setLoadingText("Processing return...");
+        Task<Document> task = new Task<>() {
+          @Override
+          protected Document call() {
+            String adminId = AuthController.getInstance().getCurrentUser().getUid();
+            return BookLoanController.processReturn(id, adminId, cond, notes, penalty);
+          }
+        };
+        task.setOnRunning(ev -> showLoading(true));
+        task.setOnSucceeded(ev -> { showLoading(false); if (task.getValue() == null) { AlertDialog.showAlert("error","Failed","Could not process return.", null); } else { AlertDialog.showAlert("success","Processed","Return processed successfully.", null); loadLoans(); dialog.close(); } });
+        task.setOnFailed(ev -> { showLoading(false); AlertDialog.showAlert("error","Error","Failed to process return", null); });
+        new Thread(task).start();
+        e.consume();
+      });
+
+      dialog.showAndWait();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
 }

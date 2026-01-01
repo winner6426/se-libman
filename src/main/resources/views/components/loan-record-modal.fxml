@@ -21,6 +21,12 @@
       <Label text="Copies"/>
       <TextField fx:id="copiesField"/>
 
+      <Label text="Borrow Condition"/>
+      <ComboBox fx:id="borrowConditionField"/>
+
+      <Label text="Borrow Notes"/>
+      <TextArea fx:id="borrowConditionNotesField" prefRowCount="2"/>
+
       <Label text="Valid"/>
       <CheckBox fx:id="validField"/>
     </VBox>

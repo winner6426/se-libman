@@ -35,6 +35,9 @@ public class BookLoan extends BookUser {
   private String processedBy;
   private java.util.Date processedAt;
   private String conditionNotes;
+  // Borrow-time condition details (e.g., NORMAL, DAMAGED)
+  private String borrowCondition;
+  private String borrowConditionNotes;
   // Return related fields
   private boolean returnRequested;
   private java.util.Date returnRequestedAt;
@@ -162,6 +165,8 @@ public class BookLoan extends BookUser {
     document.put("processedBy", processedBy);
     document.put("processedAt", processedAt);
     document.put("conditionNotes", conditionNotes);
+    document.put("borrowCondition", borrowCondition);
+    document.put("borrowConditionNotes", borrowConditionNotes);
     document.put("returnRequested", returnRequested);
     document.put("returnRequestedAt", returnRequestedAt);
     document.put("returnedBy", returnedBy);
@@ -188,6 +193,8 @@ public class BookLoan extends BookUser {
     this.processedBy = document.getString("processedBy");
     this.processedAt = document.getDate("processedAt");
     this.conditionNotes = document.getString("conditionNotes");
+    this.borrowCondition = document.getString("borrowCondition");
+    this.borrowConditionNotes = document.getString("borrowConditionNotes");
     // Return related
     this.returnRequested = document.getBoolean("returnRequested") == null ? false : document.getBoolean("returnRequested");
     this.returnRequestedAt = document.getDate("returnRequestedAt");
@@ -217,6 +224,11 @@ public class BookLoan extends BookUser {
   public String getConditionNotes() {
     return this.conditionNotes;
   }
+  public String getBorrowCondition() { return this.borrowCondition; }
+  public String getBorrowConditionNotes() { return this.borrowConditionNotes; }
+
+  public void setBorrowCondition(String s) { this.borrowCondition = s; }
+  public void setBorrowConditionNotes(String s) { this.borrowConditionNotes = s; }
 
   public boolean isReturnRequested() { return this.returnRequested; }
   public java.util.Date getReturnRequestedAt() { return this.returnRequestedAt; }

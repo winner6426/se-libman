@@ -141,6 +141,11 @@ public class User {
   public boolean isDisabled() { return this.disabled; }
   public Image getAvatar() { return this.avatar; }
 
+  // Date-related getters used by PropertyValueFactory in tables
+  public String getCreatedAt() { return this.createdAt; }
+  public String getLastModifiedDate() { return this.lastModifiedDate; }
+  public String getLastLoginAt() { return this.lastLoginAt; }
+
   public void setDisplayName(String displayName) { this.displayName = displayName; }
   public void setEmail(String email) { this.email = email; }
   public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
