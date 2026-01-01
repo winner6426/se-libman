@@ -2,6 +2,7 @@ package com.app.librarymanager.controllers;
 
 import com.app.librarymanager.interfaces.AuthStateListener;
 import com.app.librarymanager.models.User;
+import com.app.librarymanager.config.FeatureFlags;
 import com.app.librarymanager.utils.AlertDialog;
 import com.app.librarymanager.utils.AvatarUtil;
 import com.app.librarymanager.utils.StageManager;
@@ -35,10 +36,7 @@ public class LayoutController implements AuthStateListener {
     return instance;
   }
 
-  private final List<String> ADMIN_ROUTES = List.of("/views/admin/dashboard.fxml",
-      "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
-      "/views/admin/manage-loans.fxml", "/views/admin/manage-categories.fxml",
-      "/views/admin/manage-cards.fxml");
+  private List<String> ADMIN_ROUTES;
 
   private final List<String> USER_ROUTES = List.of("/views/home.fxml", "/views/profile.fxml",
       "/views/my-card.fxml");
@@ -65,6 +63,8 @@ public class LayoutController implements AuthStateListener {
   @FXML
   private TextField searchField;
   @FXML
+  private Button loanRecordsBtn;
+  @FXML
   private ImageView navLogo;
 
 
@@ -86,6 +86,23 @@ public class LayoutController implements AuthStateListener {
 //      preloadComponents(currentUser);
       updateUI(true, currentUser);
       if (currentUser.isAdmin()) {
+        // build admin routes dynamically to support optional features
+        ADMIN_ROUTES = List.of("/views/admin/dashboard.fxml",
+            "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
+            "/views/admin/manage-loans.fxml", "/views/admin/manage-returns.fxml", "/views/admin/manage-categories.fxml",
+            "/views/admin/manage-cards.fxml");
+        if (FeatureFlags.isLoanRecordsEnabled()) {
+          // insert loan-records route after manage-loans
+          ADMIN_ROUTES = new java.util.ArrayList<>(ADMIN_ROUTES);
+          ((java.util.ArrayList<String>) ADMIN_ROUTES).add(4, "/views/admin/manage-loan-records.fxml");
+          // make button visible
+          loanRecordsBtn.setVisible(true);
+          loanRecordsBtn.setManaged(true);
+        } else {
+          loanRecordsBtn.setVisible(false);
+          loanRecordsBtn.setManaged(false);
+        }
+
         loadComponent("/views/admin/dashboard.fxml");
 
       } else {
@@ -103,10 +120,13 @@ public class LayoutController implements AuthStateListener {
     homeNavBtn.setOnAction(event -> loadComponent("/views/home.fxml"));
     categoriesNavBtn.setOnAction(event -> loadComponent("/views/categories.fxml"));
     loansNavBtn.setOnAction(event -> {
-      AuthController.requireLogin();
-      if (AuthController.getInstance().isAuthenticated()) {
-        loadComponent("/views/loans.fxml");
+      System.out.println("My Loans button clicked");
+      // If user is not authenticated, open login window immediately (more responsive)
+      if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+        StageManager.showLoginWindow();
+        return;
       }
+      loadComponent("/views/loans.fxml");
     });
     favoritesNavBtn.setOnAction(event -> {
       AuthController.requireLogin();
@@ -267,6 +287,40 @@ public class LayoutController implements AuthStateListener {
   }
 
   @FXML
+  void handleManageLoanRequests(Event e) {
+    // Check admin privileges before loading
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
+        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
+      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Requests.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/manage-loan-requests.fxml");
+  }
+
+  @FXML
+  void handleManageLoanRecords(Event e) {
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
+        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
+      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Loan Records.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/manage-loan-records.fxml");
+  }
+
+  @FXML
+  void handleManageReturns(Event e) {
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
+        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
+      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Returns.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/manage-returns.fxml");
+  }
+
+  @FXML
   public void handleManageCategories(Event e) {
     handleChangeActiveButton(e);
     loadComponent("/views/admin/manage-categories.fxml");
@@ -345,7 +399,18 @@ public class LayoutController implements AuthStateListener {
     });
 
     loadTask.setOnFailed(event -> {
-      loadTask.getException().printStackTrace();
+      Throwable t = loadTask.getException();
+      System.err.println("Failed to load component: " + fxmlPath + ". Exception: " + (t != null ? t.getMessage() : "null"));
+      if (t != null) t.printStackTrace();
+      // Print root causes
+      Throwable cause = t != null ? t.getCause() : null;
+      while (cause != null) {
+        System.err.println("Caused by: " + cause.getClass().getName() + ": " + cause.getMessage());
+        cause.printStackTrace();
+        cause = cause.getCause();
+      }
+      // Notify user
+      Platform.runLater(() -> AlertDialog.showAlert("error", "Error", "Failed to load component: " + fxmlPath + ". See console for details.", null));
     });
 
     new Thread(loadTask).start();

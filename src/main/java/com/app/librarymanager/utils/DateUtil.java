@@ -33,6 +33,9 @@ public class DateUtil {
   }
 
   public static String dateToString(Date date) {
+    if (date == null) {
+      return "N/A";
+    }
     SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
     return formatter.format(date);
   }
@@ -95,10 +98,12 @@ public class DateUtil {
   }
 
   public static Date localDateToDate(LocalDate localDate) {
+    if (localDate == null) return null;
     return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
   }
 
   public static LocalDate dateToLocalDate(Date date) {
+    if (date == null) return null;
     return date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
   }
 

@@ -41,4 +41,6 @@ public class BookRating extends BookUser {
     super(document);
     this.rate = document.getDouble("rate");
   }
+
+  public double getRate() { return this.rate; }
 }

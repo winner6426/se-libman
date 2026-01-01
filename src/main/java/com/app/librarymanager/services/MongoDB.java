@@ -117,7 +117,8 @@ public class MongoDB {
       //  System.out.println("Success! Inserted document id: " + result.getInsertedId());
       return toInsert;
     } catch (Exception e) {
-      //  System.err.println("Error when trying to add " + collectionName + e.getMessage());
+      System.err.println("MongoDB.addToCollection: failed to insert into '" + collectionName + "': " + e.getMessage());
+      e.printStackTrace();
       return null;
     }
   }

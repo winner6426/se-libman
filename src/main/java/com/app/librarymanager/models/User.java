@@ -3,7 +3,7 @@ package com.app.librarymanager.models;
 import javafx.concurrent.Task;
 import javafx.scene.image.Image;
 import lombok.Data;
-import org.jetbrains.annotations.NotNull;
+// Removed NotNull annotation usage to avoid runtime annotation accessibility issues
 import org.json.JSONObject;
 
 @Data
@@ -112,7 +112,46 @@ public class User {
     new Thread(loadImageTask).start();
   }
 
-  @NotNull
+  // Explicit getters for compilation safety
+  public String getUid() {
+    return this.uid;
+  }
+
+  public String getDisplayName() {
+    return this.displayName;
+  }
+
+  public String getEmail() {
+    return this.email;
+  }
+
+  public String getPhotoUrl() {
+    return this.photoUrl;
+  }
+
+  public boolean isAdmin() {
+    return this.admin;
+  }
+
+  // Additional explicit getters/setters used across controllers
+  public String getPhoneNumber() { return this.phoneNumber; }
+  public String getBirthday() { return this.birthday; }
+  public String getPassword() { return this.password; }
+  public boolean isEmailVerified() { return this.emailVerified; }
+  public boolean isDisabled() { return this.disabled; }
+  public Image getAvatar() { return this.avatar; }
+
+  public void setDisplayName(String displayName) { this.displayName = displayName; }
+  public void setEmail(String email) { this.email = email; }
+  public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+  public void setBirthday(String birthday) { this.birthday = birthday; }
+  public void setUid(String uid) { this.uid = uid; }
+  public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; if (photoUrl != null && !photoUrl.isEmpty()) setAvatar(photoUrl); }
+  public void setAdmin(boolean admin) { this.admin = admin; }
+  public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+  public void setDisabled(boolean disabled) { this.disabled = disabled; }
+  public void setPassword(String password) { this.password = password; }
+
   private Task<Image> getImageTask(String photoUrl) {
     Task<Image> loadImageTask = new Task<Image>() {
       @Override

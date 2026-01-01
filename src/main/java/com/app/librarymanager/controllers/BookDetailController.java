@@ -45,6 +45,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.stage.Modality;
@@ -53,7 +54,7 @@ import javafx.util.Pair;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerFactory;
 import org.bson.Document;
-import org.kordamp.ikonli.javafx.FontIcon;
+// Use simple Text nodes instead of FontIcon to avoid runtime icon resolution issues
 
 public class BookDetailController extends ControllerWithLoader {
 
@@ -148,6 +149,23 @@ public class BookDetailController extends ControllerWithLoader {
     });
   }
 
+  @FXML
+  private void close() {
+    try {
+      // If displayed as an overlay inside the main content pane, remove the overlay
+      StackPane contentPane = (StackPane) closeBtn.getScene().lookup("#contentPane");
+      if (contentPane != null) {
+        contentPane.getChildren().removeIf(node -> node.getStyleClass().contains("overlay"));
+        return;
+      }
+      // Otherwise close the window
+      javafx.stage.Stage stage = (javafx.stage.Stage) closeBtn.getScene().getWindow();
+      stage.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   private Stage loadingStage;
 
   void getBookDetail(String id) {
@@ -156,10 +174,29 @@ public class BookDetailController extends ControllerWithLoader {
       protected Map<String, Object> call() {
         Book b = BookController.findBookByID(id);
         Document cp = BookCopiesController.findCopy(new BookCopies(id));
-        boolean isFavorite = FavoriteController.findFavorite(
-            new BookUser(AuthController.getInstance().getCurrentUser().getUid(), id)) != null;
+        // Safe check for authenticated user before checking favorites
+        boolean isFavorite = false;
+        try {
+          if (AuthController.getInstance().isAuthenticated() && AuthController.getInstance().getCurrentUser() != null) {
+            isFavorite = FavoriteController.findFavorite(
+                new BookUser(AuthController.getInstance().getCurrentUser().getUid(), id)) != null;
+          }
+        } catch (Exception e) {
+          // Log and proceed; favorite is optional
+          System.err.println("BookDetailController.getBookDetail: error checking favorite: " + e.getMessage());
+          e.printStackTrace();
+        }
         double avgRating = BookRatingController.averageRating(id);
-        commentList = CommentController.getAllCommentOfBook(id);
+        try {
+          commentList = CommentController.getAllCommentOfBook(id);
+          if (commentList == null) {
+            commentList = new ArrayList<>();
+          }
+        } catch (Exception e) {
+          System.err.println("BookDetailController.getBookDetail: failed to load comments for book " + id + ": " + e.getMessage());
+          e.printStackTrace();
+          commentList = new ArrayList<>();
+        }
 
         copies = (cp != null) ? new BookCopies(cp) : new BookCopies(id);
 
@@ -220,7 +257,10 @@ public class BookDetailController extends ControllerWithLoader {
       bookDiscountPrice.setVisible(false);
     }
 
-    addToFavorite.setGraphic(isFavorite ? new FontIcon("antf-heart") : new FontIcon("anto-heart"));
+    // Use a simple text heart as graphic to avoid ikonli issues
+    Text heart = new Text("\u2665");
+    heart.getStyleClass().add("heart-icon");
+    addToFavorite.setGraphic(heart);
     addToFavorite.getStyleClass().add(isFavorite ? "on" : "off");
     borrowPhysicalBook.setDisable(copies.getCopies() == 0 || !book.isActivated());
     if (!book.isActivated()) {
@@ -234,14 +274,9 @@ public class BookDetailController extends ControllerWithLoader {
     }
 
     for (int i = 0; i < 5; i++) {
-      FontIcon star = new FontIcon("antf-star");
+      Text star = new Text(i < Math.round(avgRating) ? "\u2605" : "\u2606");
       star.getStyleClass().add("star");
-      if (avgRating - i >= 0.51) {
-        starsContainer.getChildren().add(star);
-      } else {
-        star.setIconLiteral("anto-star");
-        starsContainer.getChildren().add(star);
-      }
+      starsContainer.getChildren().add(star);
     }
     starsContainer.getChildren().add(new Label("(" + avgRating + ")"));
     Task<Image> imageTask = new Task<>() {
@@ -300,6 +335,11 @@ public class BookDetailController extends ControllerWithLoader {
 
   private void handleBorrowEBook() {
     System.out.println("Borrowing E-Book");
+    // require login before borrowing
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+      AuthController.requireLogin();
+      return;
+    }
     Task<Void> task = new Task<>() {
       @Override
       protected Void call() {
@@ -314,13 +354,25 @@ public class BookDetailController extends ControllerWithLoader {
           if (!confirm) {
             return;
           }
-          Document doc = BookLoanController.addLoan(bookLoan);
+          // check borrow limit for e-book (counts as 1)
+          long current = BookLoanController.countBorrowedCopiesOfUser(
+              AuthController.getInstance().getCurrentUser().getUid());
+          if (current + 1 > BookLoanController.getMaxBorrowLimit()) {
+            int max = BookLoanController.getMaxBorrowLimit();
+            int requested = 1;
+            int remaining = Math.max(0, max - (int) current);
+            String msg = String.format("You cannot request this loan: requested=%d, current=%d, max=%d, remainingSlots=%d", requested, current, max, remaining);
+            AlertDialog.showAlert("error", "Borrow limit exceeded", msg, null);
+            return;
+          }
+          // create a loan request (pending) for admin approval
+          Document doc = BookLoanController.createLoanRequest(bookLoan);
           if (doc != null) {
-            AlertDialog.showAlert("success", "E-Book Borrowed",
-                "You have successfully borrowed the E-Book", null);
+            AlertDialog.showAlert("success", "Request Sent",
+                "Your borrow request has been sent to the librarian for approval.", null);
           } else {
-            AlertDialog.showAlert("error", "Failed to borrow E-Book",
-                "An error occurred while borrowing the E-Book", null);
+            AlertDialog.showAlert("error", "Request Failed",
+                "Failed to create borrow request. Please contact admin or try again later.", null);
           }
         });
         return null;
@@ -345,6 +397,10 @@ public class BookDetailController extends ControllerWithLoader {
 
   @FXML
   private void showBorrowPopup() {
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+      AuthController.requireLogin();
+      return;
+    }
     DatePicker fromDate = new DatePicker();
     DatePicker dueDate = new DatePicker();
     Button confirmButton = new Button("Confirm");
@@ -450,18 +506,24 @@ public class BookDetailController extends ControllerWithLoader {
       }
       BookLoan bookLoan = new BookLoan(AuthController.getInstance().getCurrentUser().getUid(),
           book.getId(), borrowDate, returnDate, numCopies);
-      Document doc = BookLoanController.addLoan(bookLoan);
+        // check borrow limit
+        long current = BookLoanController.countBorrowedCopiesOfUser(
+          AuthController.getInstance().getCurrentUser().getUid());
+        if (current + numCopies > BookLoanController.getMaxBorrowLimit()) {
+        int max = BookLoanController.getMaxBorrowLimit();
+        int requested = numCopies;
+        int remaining = Math.max(0, max - (int) current);
+        String msg = String.format("You cannot request this loan: requested=%d, current=%d, max=%d, remainingSlots=%d", requested, current, max, remaining);
+        AlertDialog.showAlert("error", "Borrow limit exceeded", msg, null);
+        return;
+        }
+      Document doc = BookLoanController.createLoanRequest(bookLoan);
       if (doc != null) {
-        AlertDialog.showAlert("success", "Book Borrowed",
-            "You have successfully borrowed the book", null);
-
-        copies.setCopies(copies.getCopies() - numCopies);
-        availableCopies.setText("Available copies: " + copies.getCopies());
-        borrowPhysicalBook.setDisable(copies.getCopies() == 0);
-
+        AlertDialog.showAlert("success", "Request Sent",
+            "Your borrow request has been sent to the librarian for approval.", null);
       } else {
-        AlertDialog.showAlert("error", "Failed to borrow book",
-            "An error occurred while borrowing the book", null);
+        AlertDialog.showAlert("error", "Request Failed",
+            "Failed to create borrow request. You might have reached the borrow limit.", null);
       }
       popupStage.close();
     });
@@ -483,8 +545,9 @@ public class BookDetailController extends ControllerWithLoader {
     }
     if (success) {
       isFavorite = !isFavorite;
-      addToFavorite.setGraphic(
-          isFavorite ? new FontIcon("antf-heart") : new FontIcon("anto-heart"));
+      Text heart = new Text("\u2665");
+      heart.getStyleClass().add("heart-icon");
+      addToFavorite.setGraphic(heart);
       addToFavorite.getStyleClass().add(isFavorite ? "on" : "off");
       addToFavorite.getStyleClass().removeAll(isFavorite ? "off" : "on");
     } else {
@@ -578,11 +641,5 @@ public class BookDetailController extends ControllerWithLoader {
       AlertDialog.showAlert("error", "Failed to Add Comment",
           "An error occurred while adding your comment", null);
     }
-  }
-
-  @FXML
-  private void close() {
-    System.out.println("Closing book detail");
-    // remove this view from the stack
   }
 }

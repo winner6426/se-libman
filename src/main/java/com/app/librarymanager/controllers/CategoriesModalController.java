@@ -15,6 +15,8 @@ public class CategoriesModalController {
   @Setter
   private SaveCallback saveCallback;
 
+  public void setSaveCallback(SaveCallback saveCallback) { this.saveCallback = saveCallback; }
+
   public void setCategories(Categories category) {
   }
 

@@ -4,21 +4,16 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.cloud.FirestoreClient;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Objects;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.cloud.firestore.Firestore;
-import lombok.Getter;
 
 public class Firebase {
 
   private static Firebase instance;
   private static final Dotenv dotenv = Dotenv.load();
-  @Getter
   private static final String apiKey = dotenv.get("FIREBASE_API_KEY");
-  @Getter
   private static final String authDomain = dotenv.get("FIREBASE_AUTH_DOMAIN");
   private static final String databaseURL = dotenv.get("FIREBASE_DATABASE_URL");
   private static final String projectId = dotenv.get("FIREBASE_PROJECT_ID");
@@ -72,4 +67,8 @@ public class Firebase {
     }
     return instance.db;
   }
+
+  // Explicit getters to avoid reliance on Lombok during compilation
+  public static String getApiKey() { return apiKey; }
+  public static String getAuthDomain() { return authDomain; }
 }

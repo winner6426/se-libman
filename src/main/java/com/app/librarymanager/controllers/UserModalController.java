@@ -31,7 +31,7 @@ import com.app.librarymanager.models.User;
 import javafx.util.Callback;
 import javax.imageio.ImageIO;
 import lombok.Setter;
-import org.jetbrains.annotations.NotNull;
+// Removed NotNull annotation to avoid runtime annotation accessibility issues
 import org.json.JSONObject;
 
 public class UserModalController extends ControllerWithLoader {
@@ -74,6 +74,7 @@ public class UserModalController extends ControllerWithLoader {
   private User user;
   @Setter
   private SaveCallback saveCallback;
+  public void setSaveCallback(SaveCallback saveCallback) { this.saveCallback = saveCallback; }
   private boolean isEditMode = false;
   private String filePath;
   String displayName;
@@ -141,7 +142,6 @@ public class UserModalController extends ControllerWithLoader {
     }
   }
 
-  @NotNull
   private Task<Image> getImageTask(String photoUrl) {
     Task<Image> loadImageTask = new Task<Image>() {
       @Override

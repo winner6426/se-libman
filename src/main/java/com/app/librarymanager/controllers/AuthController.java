@@ -361,6 +361,10 @@ public class AuthController {
     this.currentUser = updatedUser;
   }
 
+  public User getCurrentUser() {
+    return this.currentUser;
+  }
+
   public static void requireLogin() {
     if (!AuthController.getInstance().validateIdToken()) {
       AlertDialog.showAlert("error", "Unauthorized", "Please login first to access this page",

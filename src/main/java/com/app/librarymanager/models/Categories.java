@@ -46,6 +46,18 @@ public class Categories {
             new Timestamp(System.currentTimeMillis())));
   }
 
+  // Explicit getter for compilation
+  public String getName() {
+    return this.name;
+  }
+
+  public void setLastUpdated(Date lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
+
+  public ObjectId get_id() { return this._id; }
+  public void set_id(ObjectId _id) { this._id = _id; }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {

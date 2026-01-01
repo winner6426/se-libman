@@ -23,7 +23,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
-import org.jetbrains.annotations.NotNull;
+// Removed NotNull annotation usage to avoid runtime annotation accessibility issues
 import org.json.JSONObject;
 
 public class RegisterController extends ControllerWithLoader {
@@ -90,7 +90,6 @@ public class RegisterController extends ControllerWithLoader {
     new Thread(registerTask).start();
   }
 
-  @NotNull
   private Task<JSONObject> getTask(User newUser) {
     Task<JSONObject> registerTask = new Task<JSONObject>() {
       @Override

@@ -71,6 +71,18 @@ public class LibraryCard {
       }
     }
   }
+
+  public Status getStatus() { return this.status; }
+  public void setRegisterDate(Date registerDate) { this.registerDate = registerDate; }
+  public void setExpireDate(Date expireDate) { this.expireDate = expireDate; }
+  public void setStatus(Status status) { this.status = status; }
+
+  // Explicit getters for compilation
+  public String getUserId() { return this.userId; }
+  public ObjectId get_id() { return this._id; }
+  public String getUserName() { return this.userName; }
+  public Date getRegisterDate() { return this.registerDate; }
+  public Date getExpireDate() { return this.expireDate; }
 }
 
 

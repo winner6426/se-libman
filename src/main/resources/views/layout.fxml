@@ -27,7 +27,7 @@
         styleClass="btn, btn-toolbar, active">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-home" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="🏠" styleClass="toolbar-icon"/>
             <Text text="Dashboard"/>
           </HBox>
         </graphic>
@@ -36,7 +36,7 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-read" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="📚" styleClass="toolbar-icon"/>
             <Text text="Books"/>
           </HBox>
         </graphic>
@@ -45,8 +45,35 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-solution" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="🔁" styleClass="toolbar-icon"/>
             <Text text="Loans"/>
+          </HBox>
+        </graphic>
+      </Button>
+      <Button fx:id="loanRecordsBtn" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageLoanRecords"
+        styleClass="btn, btn-toolbar">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <Text text="📋" styleClass="toolbar-icon"/>
+            <Text text="Loan Records"/>
+          </HBox>
+        </graphic>
+      </Button>
+      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageReturns"
+        styleClass="btn, btn-toolbar">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <Text text="🧾" styleClass="toolbar-icon"/>
+            <Text text="Returns"/>
+          </HBox>
+        </graphic>
+      </Button>
+      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageLoanRequests"
+        styleClass="btn, btn-toolbar">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <Text text="📄" styleClass="toolbar-icon"/>
+            <Text text="Requests"/>
           </HBox>
         </graphic>
       </Button>
@@ -54,7 +81,7 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-team" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="👥" styleClass="toolbar-icon"/>
             <Text text="Users"/>
           </HBox>
         </graphic>
@@ -63,7 +90,7 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-apartment" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="🏢" styleClass="toolbar-icon"/>
             <Text text="Categories"/>
           </HBox>
         </graphic>
@@ -72,7 +99,7 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-idcard" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="🆔" styleClass="toolbar-icon"/>
             <Text text="Cards"/>
           </HBox>
         </graphic>
@@ -82,7 +109,7 @@
         styleClass="btn, btn-toolbar, danger">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <FontIcon iconLiteral="anto-logout" iconSize="16" styleClass="toolbar-icon"/>
+            <Text text="🔓" styleClass="toolbar-icon"/>
             <Text text="Logout"/>
           </HBox>
         </graphic>

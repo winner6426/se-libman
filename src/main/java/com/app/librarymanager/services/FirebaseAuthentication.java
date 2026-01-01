@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.StreamSupport;
-import org.jetbrains.annotations.NotNull;
+// Removed org.jetbrains annotations to avoid runtime accessibility issues
 import org.json.JSONObject;
 
 public class FirebaseAuthentication {
@@ -100,7 +100,7 @@ public class FirebaseAuthentication {
     return new JSONObject().put("success", false).put("message", "Registration Failed");
   }
 
-  public static JSONObject createAccountWithEmailAndPasswordUsingFirebaseAuth(@NotNull User user) {
+  public static JSONObject createAccountWithEmailAndPasswordUsingFirebaseAuth(User user) {
     //  System.out.println("Creating user: " + user.toString());
     CreateRequest request = new CreateRequest()
         .setEmail(user.getEmail())

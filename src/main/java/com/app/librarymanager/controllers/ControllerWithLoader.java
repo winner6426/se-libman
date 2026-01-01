@@ -20,35 +20,45 @@ public class ControllerWithLoader {
   private Button cancelButton;
 
   protected void setLoadingText(String text) {
-    loadingText.setText(text);
+    if (loadingText == null) {
+      // Optional control - skip if not present in FXML
+      System.err.println("ControllerWithLoader: loadingText not present in FXML; skipping setLoadingText.");
+      return;
+    }
+    // Ensure update happens on FX thread
+    javafx.application.Platform.runLater(() -> loadingText.setText(text));
   }
 
   protected void setCancelLoadingAction(Callback<Void, Void> action) {
     if (cancelButton == null) {
-      AlertDialog.showAlert("Error", "Cancel button not found.",
-          "Please check the FXML file for missing components.", null);
+      // No cancel button in this layout; nothing to wire.
+      System.err.println("ControllerWithLoader: cancelButton not present in FXML; skipping setCancelLoadingAction.");
       return;
     }
-    cancelButton.setOnAction(e -> action.call(null));
+    // Ensure we assign handler on FX thread
+    javafx.application.Platform.runLater(() -> cancelButton.setOnAction(e -> action.call(null)));
   }
 
   protected void showCancel(boolean show) {
     if (cancelButton == null) {
-      AlertDialog.showAlert("Error", "Cancel button not found.",
-          "Please check the FXML file for missing components.", null);
+      // Optional control - silently ignore if not present in FXML
       return;
     }
-    cancelButton.setVisible(show);
-    cancelButton.setManaged(show);
+    javafx.application.Platform.runLater(() -> {
+      cancelButton.setVisible(show);
+      cancelButton.setManaged(show);
+    });
   }
 
   protected void showLoading(boolean show) {
     if (loadingOverlay == null || loadingSpinner == null) {
-      AlertDialog.showAlert("Error", "Loading components not found.",
-          "Please check the FXML file for missing components.", null);
+      // Optional loading overlay not present in this scene; nothing to show.
+      System.err.println("ControllerWithLoader: loadingOverlay/loadingSpinner not present in FXML; skipping showLoading.");
       return;
     }
-    loadingOverlay.setVisible(show);
-    loadingSpinner.setVisible(show);
+    javafx.application.Platform.runLater(() -> {
+      loadingOverlay.setVisible(show);
+      loadingSpinner.setVisible(show);
+    });
   }
 }
