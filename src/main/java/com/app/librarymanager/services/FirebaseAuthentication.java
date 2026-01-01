@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.StreamSupport;
@@ -232,6 +233,32 @@ public class FirebaseAuthentication {
   public static boolean verifyPassword(String email, String password) {
     JSONObject response = loginWithEmailAndPassword(email, password);
     return response.has("data");
+  }
+
+  /**
+   * Lookup users by their localIds (UIDs) via Firebase Identity Toolkit REST API.
+   * This exists as a robust fallback when the Admin SDK methods are not available
+   * or cause runtime issues in certain environments.
+   */
+  public static List<org.json.JSONObject> lookupUsersByLocalIds(List<String> localIds) {
+    try {
+      if (localIds == null || localIds.isEmpty()) return List.of();
+      String url = "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + Firebase.getApiKey();
+      org.json.JSONObject body = new org.json.JSONObject();
+      body.put("localId", new org.json.JSONArray(localIds));
+      org.json.JSONObject resp = Fetcher.post(url, body.toString());
+      if (resp == null) return List.of();
+      if (resp.has("users")) {
+        org.json.JSONArray arr = resp.getJSONArray("users");
+        List<org.json.JSONObject> out = new java.util.ArrayList<>();
+        for (int i = 0; i < arr.length(); i++) out.add(arr.getJSONObject(i));
+        return out;
+      }
+      return List.of();
+    } catch (Exception e) {
+      System.err.println("FirebaseAuthentication.lookupUsersByLocalIds: failed: " + e.getMessage());
+      return List.of();
+    }
   }
 
 }

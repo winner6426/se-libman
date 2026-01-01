@@ -13,7 +13,6 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -47,8 +46,6 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
   @FXML
   private TextArea conditionNotes;
   @FXML
-  private ComboBox<String> borrowCondition;
-  @FXML
   private Button approveBtn;
   @FXML
   private Button rejectBtn;
@@ -80,9 +77,7 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
 
     loadRequests();
 
-    // initialize borrowCondition combobox
-    borrowCondition.getItems().addAll("NORMAL", "DAMAGED", "LOST");
-    borrowCondition.setValue("NORMAL");
+    // borrow condition is fixed to NORMAL for requests; selection removed from UI
 
     approveBtn.setOnAction(e -> onApprove());
     rejectBtn.setOnAction(e -> onReject());
@@ -200,7 +195,7 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
     if (sel == null) return;
     ObjectId id = sel.getLoan().getBookLoan().get_id();
     String notes = conditionNotes.getText();
-    String borrowCond = borrowCondition != null ? borrowCondition.getValue() : "NORMAL";
+    String borrowCond = "NORMAL";
     setLoadingText("Approving...");
     Task<Document> task = new Task<>() {
       @Override
@@ -267,15 +262,11 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
       content.setPadding(new javafx.geometry.Insets(10));
       javafx.scene.text.Text info = new javafx.scene.text.Text("User: " + (row.getUser() != null ? row.getUser().getDisplayName() + " (" + row.getUser().getEmail() + ")" : row.getLoan().getBookLoan().getUserId()));
       javafx.scene.text.Text book = new javafx.scene.text.Text("Book: " + row.getLoan().getTitleBook());
-      javafx.scene.control.Label borrowCondLabel = new javafx.scene.control.Label("Borrow Condition");
-      javafx.scene.control.ComboBox<String> borrowCond = new javafx.scene.control.ComboBox<>();
-      borrowCond.getItems().addAll("NORMAL", "DAMAGED", "LOST");
-      borrowCond.setValue("NORMAL");
       javafx.scene.control.Label notesLabel = new javafx.scene.control.Label("Condition Notes");
       javafx.scene.control.TextArea notesArea = new javafx.scene.control.TextArea();
       notesArea.setPrefRowCount(3);
 
-      content.getChildren().addAll(info, book, borrowCondLabel, borrowCond, notesLabel, notesArea);
+      content.getChildren().addAll(info, book, notesLabel, notesArea);
 
       dialog.getDialogPane().setContent(content);
       ButtonType approveType = new ButtonType("Approve", ButtonBar.ButtonData.OK_DONE);
@@ -288,7 +279,7 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
       javafx.scene.control.Button approveBtn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(approveType);
       approveBtn.getStyleClass().addAll("btn", "btn-primary");
       approveBtn.addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
-        String borrowCondVal = borrowCond.getValue();
+        String borrowCondVal = "NORMAL";
         String notes = notesArea.getText();
         // call approve
         ObjectId id = row.getLoan().getBookLoan().get_id();

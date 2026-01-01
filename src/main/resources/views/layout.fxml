@@ -50,15 +50,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button fx:id="loanRecordsBtn" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageLoanRecords"
-        styleClass="btn, btn-toolbar">
-        <graphic>
-          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <Text text="📋" styleClass="toolbar-icon"/>
-            <Text text="Loan Records"/>
-          </HBox>
-        </graphic>
-      </Button>
+      <!-- Loan Records removed per request -->
       <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageReturns"
         styleClass="btn, btn-toolbar">
         <graphic>

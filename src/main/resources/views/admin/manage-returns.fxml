@@ -18,6 +18,8 @@
                     <TableColumn fx:id="userNameColumn" text="User Name" prefWidth="150" />
                     <TableColumn fx:id="bookTitleColumn" text="Book" prefWidth="200" />
                     <TableColumn fx:id="borrowConditionColumn" text="Borrow Condition" prefWidth="140" />
+                    <TableColumn fx:id="borrowConditionNotesColumn" text="Borrow Notes" prefWidth="220" />
+                    <TableColumn fx:id="returnConditionNotesColumn" text="Return Notes" prefWidth="220" />
                     <TableColumn fx:id="borrowDateColumn" text="Borrowed" prefWidth="120" />
                     <TableColumn fx:id="dueDateColumn" text="Due" prefWidth="120" />
                   </columns>
@@ -25,24 +27,6 @@
                 <Button fx:id="refreshBtn" text="Refresh" AnchorPane.bottomAnchor="10" AnchorPane.rightAnchor="10" />
               </children>
             </AnchorPane>
-            <VBox spacing="8">
-              <padding>
-                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
-              </padding>
-              <children>
-                <Label text="Return Condition" />
-                <ComboBox fx:id="returnCondition" />
-                <Label text="Condition Notes" />
-                <TextArea fx:id="conditionNotes" prefRowCount="6" />
-                <Label text="Penalty Amount" />
-                <TextField fx:id="penaltyAmount" />
-                <HBox spacing="8">
-                  <children>
-                    <Button fx:id="processReturnBtn" text="Process Return" />
-                  </children>
-                </HBox>
-              </children>
-            </VBox>
           </items>
         </SplitPane>
 

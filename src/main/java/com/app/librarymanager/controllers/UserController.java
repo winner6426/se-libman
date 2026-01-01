@@ -243,12 +243,26 @@ public class UserController {
       System.err.println("UserController.listUsers: called with ids=" + (ids == null ? 0 : ids.size()));
       List<User> users = new ArrayList<>();
       if (ids == null) return users;
-      for (String id : ids) {
-        if (id == null || id.isEmpty()) {
-          continue;
+      // First try a batched REST lookup via Identity Toolkit (more robust across SDK versions)
+      try {
+        List<org.json.JSONObject> found = FirebaseAuthentication.lookupUsersByLocalIds(ids);
+        if (found != null && !found.isEmpty()) {
+          for (org.json.JSONObject j : found) {
+            try {
+              User u = jsonToUser(j);
+              if (u != null) users.add(u);
+            } catch (Throwable inner) { inner.printStackTrace(); }
+          }
+          return users;
         }
+      } catch (Throwable t) {
+        System.err.println("UserController.listUsers: REST lookup failed: " + t.getMessage());
+      }
+
+      // Fallback: fetch individually using Admin SDK (with safeguards)
+      for (String id : ids) {
+        if (id == null || id.isEmpty()) continue;
         try {
-          // Use the safe getUser method which has internal fallbacks
           User user = getUser(id);
           if (user == null) {
             System.err.println("UserController.listUsers: no user found for id=" + id);
@@ -258,7 +272,6 @@ public class UserController {
         } catch (Throwable inner) {
           System.err.println("UserController.listUsers(ids): failed to fetch/convert user " + id + " (" + inner.getClass().getName() + "): " + inner);
           inner.printStackTrace();
-          // continue with others
         }
       }
       return users;

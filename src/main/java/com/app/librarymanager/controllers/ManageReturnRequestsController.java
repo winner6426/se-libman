@@ -43,18 +43,15 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
   @FXML
   private TableColumn<ReturnRow, String> borrowConditionColumn;
   @FXML
+  private TableColumn<ReturnRow, String> borrowConditionNotesColumn;
+  @FXML
+  private TableColumn<ReturnRow, String> returnConditionNotesColumn;
+  @FXML
   private TableColumn<ReturnRow, String> borrowDateColumn;
   @FXML
   private TableColumn<ReturnRow, String> dueDateColumn;
 
-  @FXML
-  private ComboBox<String> returnCondition;
-  @FXML
-  private TextArea conditionNotes;
-  @FXML
-  private TextField penaltyAmount;
-  @FXML
-  private Button processReturnBtn;
+  // Processing is handled via popup dialog; side panel controls removed from FXML
   @FXML
   private Button refreshBtn;
 
@@ -77,6 +74,12 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
     borrowConditionColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
       cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ?
         (cell.getValue().getLoan().getBookLoan().getBorrowCondition() != null ? cell.getValue().getLoan().getBookLoan().getBorrowCondition() : "") : ""));
+    borrowConditionNotesColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+      cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ?
+        (cell.getValue().getLoan().getBookLoan().getBorrowConditionNotes() != null ? cell.getValue().getLoan().getBookLoan().getBorrowConditionNotes() : "") : ""));
+    returnConditionNotesColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
+      cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ?
+        (cell.getValue().getLoan().getBookLoan().getReturnConditionNotes() != null ? cell.getValue().getLoan().getBookLoan().getReturnConditionNotes() : "") : ""));
     borrowDateColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(
         cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ? DateUtil.dateToString(cell.getValue().getLoan().getBookLoan().getBorrowDate()) : "N/A"
     ));
@@ -84,17 +87,10 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
         cell.getValue() != null && cell.getValue().getLoan() != null && cell.getValue().getLoan().getBookLoan() != null ? DateUtil.dateToString(cell.getValue().getLoan().getBookLoan().getDueDate()) : "N/A"
     ));
 
-    returnCondition.getItems().addAll("NORMAL", "LATE", "DAMAGED", "LOST");
-    returnCondition.setValue("NORMAL");
-    processReturnBtn.setDisable(true);
+    // refresh button remains
     refreshBtn.setOnAction(e -> loadLoans());
     loansTable.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
-      boolean has = newV != null;
-      processReturnBtn.setDisable(!has);
-      if (!has) {
-        conditionNotes.clear();
-        penaltyAmount.clear();
-      }
+      // no side panel controls to manage; selection only affects context menu availability
     });
 
       // context menu to process returns via right-click
@@ -115,7 +111,7 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
         return row;
       });
 
-    processReturnBtn.setOnAction(e -> onProcessReturn());
+    // processReturn now via popup only (context menu or double-click)
     loadLoans();
   }
 
@@ -189,51 +185,7 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
     return loansTable.getSelectionModel().getSelectedItem();
   }
 
-  private void onProcessReturn() {
-    ReturnRow sel = getSelected();
-    if (sel == null) return;
-    ObjectId id = sel.getLoan().getBookLoan().get_id();
-    String condition = returnCondition.getValue();
-    String notes = conditionNotes.getText();
-    Double parsedPenalty = null;
-    try {
-      String p = penaltyAmount.getText();
-      if (p != null && !p.isBlank()) {
-        parsedPenalty = Double.parseDouble(p);
-      }
-    } catch (Exception e) {
-      parsedPenalty = null;
-    }
-    final Double penalty = parsedPenalty;
-
-    if ("DAMAGED".equals(condition) && (notes == null || notes.isBlank())) {
-      AlertDialog.showAlert("info", "Info", "Please provide damage details for DAMAGED condition.", null);
-      return;
-    }
-
-    if (!AlertDialog.showConfirm("Process return", "Are you sure you want to process this return?")) return;
-
-    setLoadingText("Processing return...");
-    Task<Document> task = new Task<>() {
-      @Override
-      protected Document call() {
-        String adminId = AuthController.getInstance().getCurrentUser().getUid();
-        return BookLoanController.processReturn(id, adminId, condition, notes, penalty);
-      }
-    };
-    task.setOnRunning(e -> showLoading(true));
-    task.setOnSucceeded(e -> {
-      showLoading(false);
-      if (task.getValue() == null) {
-        AlertDialog.showAlert("error", "Failed", "Could not process return.", null);
-      } else {
-        AlertDialog.showAlert("success", "Processed", "Return processed successfully.", null);
-        loadLoans();
-      }
-    });
-    task.setOnFailed(e -> { showLoading(false); AlertDialog.showAlert("error", "Error", "Failed to process return.", null); });
-    new Thread(task).start();
-  }
+  // Processing now handled by dialog in openProcessReturnDialog
 
   private void openProcessReturnDialog(ReturnRow row) {
     try {
@@ -249,13 +201,23 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
       javafx.scene.control.ComboBox<String> returnCond = new javafx.scene.control.ComboBox<>();
       returnCond.getItems().addAll("NORMAL", "LATE", "DAMAGED", "LOST");
       returnCond.setValue("NORMAL");
+      javafx.scene.control.Label borrowNoteLabel = new javafx.scene.control.Label("Borrow Note (read-only)");
+      javafx.scene.control.TextArea borrowNoteArea = new javafx.scene.control.TextArea();
+      borrowNoteArea.setPrefRowCount(2);
+      // pre-fill with original borrow note if present and make it read-only
+      try {
+        String existingBorrowNote = row.getLoan().getBookLoan().getBorrowConditionNotes();
+        if (existingBorrowNote != null) borrowNoteArea.setText(existingBorrowNote);
+      } catch (Exception ex) { }
+      borrowNoteArea.setEditable(false);
+      borrowNoteArea.setMouseTransparent(true);
       javafx.scene.control.Label notesLabel = new javafx.scene.control.Label("Condition Notes");
       javafx.scene.control.TextArea notesArea = new javafx.scene.control.TextArea();
       notesArea.setPrefRowCount(3);
       javafx.scene.control.Label penaltyLabel = new javafx.scene.control.Label("Penalty Amount");
       javafx.scene.control.TextField penaltyField = new javafx.scene.control.TextField();
 
-      content.getChildren().addAll(info, book, returnCondLabel, returnCond, notesLabel, notesArea, penaltyLabel, penaltyField);
+      content.getChildren().addAll(info, book, borrowNoteLabel, borrowNoteArea, returnCondLabel, returnCond, notesLabel, notesArea, penaltyLabel, penaltyField);
 
       dialog.getDialogPane().setContent(content);
       ButtonType processType = new ButtonType("Process", ButtonBar.ButtonData.OK_DONE);
@@ -267,6 +229,8 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
       processBtn.addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
         final String cond = returnCond.getValue();
         final String notes = notesArea.getText();
+        // Do not allow modifying borrow note at return time; pass null so existing note is preserved
+        final String borrowNote = null;
         String p = penaltyField.getText();
         Double parsedPenalty = null;
         try {
@@ -276,12 +240,17 @@ public class ManageReturnRequestsController extends ControllerWithLoader {
         }
         final Double penalty = parsedPenalty;
         final ObjectId id = row.getLoan().getBookLoan().get_id();
+        if ("DAMAGED".equals(cond) && (notes == null || notes.isBlank())) {
+          AlertDialog.showAlert("info", "Info", "Please provide damage details for DAMAGED condition.", null);
+          e.consume();
+          return;
+        }
         setLoadingText("Processing return...");
         Task<Document> task = new Task<>() {
           @Override
           protected Document call() {
             String adminId = AuthController.getInstance().getCurrentUser().getUid();
-            return BookLoanController.processReturn(id, adminId, cond, notes, penalty);
+            return BookLoanController.processReturn(id, adminId, cond, notes, borrowNote, penalty);
           }
         };
         task.setOnRunning(ev -> showLoading(true));
