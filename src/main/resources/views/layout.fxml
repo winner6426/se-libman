@@ -63,7 +63,8 @@
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
-            <Text text="🧾" styleClass="toolbar-icon"/>
+            <!-- Use a simple arrow glyph instead of emoji to avoid missing glyph rendering on some systems -->
+            <Text text="↩" styleClass="toolbar-icon"/>
             <Text text="Returns"/>
           </HBox>
         </graphic>

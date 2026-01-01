@@ -13,6 +13,13 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.TableRow;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -39,6 +46,8 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
 
   @FXML
   private TextArea conditionNotes;
+  @FXML
+  private ComboBox<String> borrowCondition;
   @FXML
   private Button approveBtn;
   @FXML
@@ -71,6 +80,10 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
 
     loadRequests();
 
+    // initialize borrowCondition combobox
+    borrowCondition.getItems().addAll("NORMAL", "DAMAGED", "LOST");
+    borrowCondition.setValue("NORMAL");
+
     approveBtn.setOnAction(e -> onApprove());
     rejectBtn.setOnAction(e -> onReject());
     approveBtn.setDisable(true);
@@ -82,6 +95,24 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
       if (!has) {
         conditionNotes.clear();
       }
+    });
+
+    // Add context menu to process requests via right-click (opens a popup with details)
+    requestsTable.setRowFactory(tableView -> {
+      final TableRow<RequestRow> row = new TableRow<>();
+      final ContextMenu contextMenu = new ContextMenu();
+      final MenuItem processItem = new MenuItem("Process Request");
+      processItem.setOnAction(e -> {
+        RequestRow rr = row.getItem();
+        if (rr != null) openProcessRequestDialog(rr);
+      });
+      final MenuItem refreshItem = new MenuItem("Refresh");
+      refreshItem.setOnAction(e -> loadRequests());
+      contextMenu.getItems().addAll(processItem, refreshItem);
+      row.contextMenuProperty().bind(
+          javafx.beans.binding.Bindings.when(row.emptyProperty()).then((ContextMenu) null)
+              .otherwise(contextMenu));
+      return row;
     });
     refreshBtn.setOnAction(e -> loadRequests());
   }
@@ -169,12 +200,13 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
     if (sel == null) return;
     ObjectId id = sel.getLoan().getBookLoan().get_id();
     String notes = conditionNotes.getText();
+    String borrowCond = borrowCondition != null ? borrowCondition.getValue() : "NORMAL";
     setLoadingText("Approving...");
     Task<Document> task = new Task<>() {
       @Override
       protected Document call() {
         String adminId = AuthController.getInstance().getCurrentUser().getUid();
-        return BookLoanController.approveRequest(id, adminId, notes);
+        return BookLoanController.approveRequest(id, adminId, borrowCond, notes);
       }
     };
     task.setOnRunning(e -> showLoading(true));
@@ -222,5 +254,82 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
       AlertDialog.showAlert("error", "Error", "Failed to reject request", null);
     });
     new Thread(task).start();
+  }
+
+  private void openProcessRequestDialog(RequestRow row) {
+    try {
+      Dialog<Void> dialog = new Dialog<>();
+      dialog.setTitle("Process Loan Request");
+      dialog.initOwner(requestsTable.getScene().getWindow());
+
+      // build content
+      javafx.scene.layout.VBox content = new javafx.scene.layout.VBox(8);
+      content.setPadding(new javafx.geometry.Insets(10));
+      javafx.scene.text.Text info = new javafx.scene.text.Text("User: " + (row.getUser() != null ? row.getUser().getDisplayName() + " (" + row.getUser().getEmail() + ")" : row.getLoan().getBookLoan().getUserId()));
+      javafx.scene.text.Text book = new javafx.scene.text.Text("Book: " + row.getLoan().getTitleBook());
+      javafx.scene.control.Label borrowCondLabel = new javafx.scene.control.Label("Borrow Condition");
+      javafx.scene.control.ComboBox<String> borrowCond = new javafx.scene.control.ComboBox<>();
+      borrowCond.getItems().addAll("NORMAL", "DAMAGED", "LOST");
+      borrowCond.setValue("NORMAL");
+      javafx.scene.control.Label notesLabel = new javafx.scene.control.Label("Condition Notes");
+      javafx.scene.control.TextArea notesArea = new javafx.scene.control.TextArea();
+      notesArea.setPrefRowCount(3);
+
+      content.getChildren().addAll(info, book, borrowCondLabel, borrowCond, notesLabel, notesArea);
+
+      dialog.getDialogPane().setContent(content);
+      ButtonType approveType = new ButtonType("Approve", ButtonBar.ButtonData.OK_DONE);
+      ButtonType rejectType = new ButtonType("Reject", ButtonBar.ButtonData.NO);
+      ButtonType cancelType = ButtonType.CANCEL;
+      dialog.getDialogPane().getButtonTypes().addAll(approveType, rejectType, cancelType);
+
+      dialog.setResultConverter(b -> null);
+
+      javafx.scene.control.Button approveBtn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(approveType);
+      approveBtn.getStyleClass().addAll("btn", "btn-primary");
+      approveBtn.addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
+        String borrowCondVal = borrowCond.getValue();
+        String notes = notesArea.getText();
+        // call approve
+        ObjectId id = row.getLoan().getBookLoan().get_id();
+        setLoadingText("Approving...");
+        Task<Document> task = new Task<>() {
+          @Override
+          protected Document call() {
+            String adminId = AuthController.getInstance().getCurrentUser().getUid();
+            return BookLoanController.approveRequest(id, adminId, borrowCondVal, notes);
+          }
+        };
+        task.setOnRunning(ev -> showLoading(true));
+        task.setOnSucceeded(ev -> { showLoading(false); if (task.getValue() == null) { AlertDialog.showAlert("error","Approve Failed","Could not approve request.",null); } else { AlertDialog.showAlert("success","Approved","Request approved.", null); loadRequests(); dialog.close(); } });
+        task.setOnFailed(ev -> { showLoading(false); AlertDialog.showAlert("error","Error","Failed to approve request", null); });
+        new Thread(task).start();
+        e.consume();
+      });
+
+      javafx.scene.control.Button rejectBtn = (javafx.scene.control.Button) dialog.getDialogPane().lookupButton(rejectType);
+      rejectBtn.getStyleClass().addAll("btn", "btn-danger");
+      rejectBtn.addEventFilter(javafx.event.ActionEvent.ACTION, e -> {
+        String notes = notesArea.getText();
+        ObjectId id = row.getLoan().getBookLoan().get_id();
+        setLoadingText("Rejecting...");
+        Task<Document> task = new Task<>() {
+          @Override
+          protected Document call() {
+            String adminId = AuthController.getInstance().getCurrentUser().getUid();
+            return BookLoanController.rejectRequest(id, adminId, notes);
+          }
+        };
+        task.setOnRunning(ev -> showLoading(true));
+        task.setOnSucceeded(ev -> { showLoading(false); if (task.getValue() == null) { AlertDialog.showAlert("error","Reject Failed","Could not reject request.",null); } else { AlertDialog.showAlert("success","Rejected","Request rejected.", null); loadRequests(); dialog.close(); } });
+        task.setOnFailed(ev -> { showLoading(false); AlertDialog.showAlert("error","Error","Failed to reject request", null); });
+        new Thread(task).start();
+        e.consume();
+      });
+
+      dialog.showAndWait();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }

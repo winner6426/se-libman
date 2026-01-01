@@ -26,6 +26,10 @@
           <Label text="Filter by Mode:"/>
           <ComboBox fx:id="modeFilter" styleClass="combo-box" promptText="Filter by Mode"/>
         </VBox>
+        <VBox spacing="3">
+          <Label text="Filter by Status:"/>
+          <ComboBox fx:id="statusFilter" styleClass="combo-box" promptText="Filter by Status"/>
+        </VBox>
       </HBox>
       <Region HBox.hgrow="ALWAYS"/>
       <HBox spacing="10">

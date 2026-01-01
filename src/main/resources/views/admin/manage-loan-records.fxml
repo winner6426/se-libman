@@ -29,6 +29,8 @@
         <TableColumn fx:id="bookIdColumn" text="Book ID"/>
         <TableColumn fx:id="bookTitleColumn" text="Book Title"/>
         <TableColumn fx:id="borrowDateColumn" text="Borrow Date"/>
+        <TableColumn fx:id="borrowConditionColumn" text="Borrow Condition"/>
+        <TableColumn fx:id="borrowConditionNotesColumn" text="Borrow Notes"/>
         <TableColumn fx:id="statusColumn" text="Status"/>
         <TableColumn fx:id="typeColumn" text="Type"/>
         <TableColumn fx:id="numOfCopiesColumn" text="Copies"/>

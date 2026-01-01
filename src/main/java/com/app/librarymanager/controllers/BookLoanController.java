@@ -51,7 +51,16 @@ public class BookLoanController {
     map.put("requestDate", bookLoan.getRequestDate());
     map.put("processedBy", bookLoan.getProcessedBy());
     map.put("processedAt", bookLoan.getProcessedAt());
+    // Borrow-time condition details
+    map.put("borrowCondition", bookLoan.getBorrowCondition());
+    map.put("borrowConditionNotes", bookLoan.getBorrowConditionNotes());
+    // Legacy conditionNotes kept for backward compatibility
     map.put("conditionNotes", bookLoan.getConditionNotes());
+    // Return-time condition details
+    map.put("returnCondition", bookLoan.getReturnCondition());
+    map.put("returnConditionNotes", bookLoan.getReturnConditionNotes());
+    map.put("returnedBy", bookLoan.getReturnedBy());
+    map.put("returnedAt", bookLoan.getReturnedAt());
     return map;
   }
 
@@ -165,7 +174,7 @@ public class BookLoanController {
     return MongoDB.getInstance().countDocuments("bookLoan", Filters.eq("status", "PENDING"));
   }
 
-  public static Document approveRequest(ObjectId id, String processedBy, String conditionNotes) {
+  public static Document approveRequest(ObjectId id, String processedBy, String borrowCondition, String conditionNotes) {
     try {
       Document doc = MongoDB.getInstance().findAnObject("bookLoan", Filters.eq("_id", id));
       if (doc == null) return null;
@@ -189,6 +198,10 @@ public class BookLoanController {
       update.put("dueDate", dueDate);
       update.put("processedBy", processedBy);
       update.put("processedAt", now);
+      // store borrow-time condition and notes; mark as available for return processing
+      update.put("borrowCondition", borrowCondition != null ? borrowCondition : "NORMAL");
+      update.put("borrowConditionNotes", conditionNotes);
+      update.put("returnRequested", true);
       update.put("conditionNotes", conditionNotes);
       update.put("lastUpdated", new Timestamp(System.currentTimeMillis()));
 

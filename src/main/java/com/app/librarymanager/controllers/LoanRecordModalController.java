@@ -55,6 +55,10 @@ public class LoanRecordModalController extends ControllerWithLoader {
   private TextArea returnNotesField;
   @FXML
   private TextArea conditionNotesField;
+  @FXML
+  private ComboBox<String> borrowConditionField;
+  @FXML
+  private TextArea borrowConditionNotesField;
 
   private SaveCallback saveCallback;
   private BookLoanController.BookLoanUser bookLoanUser;
@@ -101,6 +105,8 @@ public class LoanRecordModalController extends ControllerWithLoader {
     returnConditionField.setValue(loan.getReturnCondition());
     returnNotesField.setText(loan.getReturnConditionNotes() != null ? loan.getReturnConditionNotes() : "");
     conditionNotesField.setText(loan.getConditionNotes() != null ? loan.getConditionNotes() : "");
+    borrowConditionField.setValue(loan.getBorrowCondition() != null ? loan.getBorrowCondition() : "NORMAL");
+    borrowConditionNotesField.setText(loan.getBorrowConditionNotes() != null ? loan.getBorrowConditionNotes() : "");
   }
 
   public void setSaveCallback(SaveCallback saveCallback) {
@@ -153,6 +159,8 @@ public class LoanRecordModalController extends ControllerWithLoader {
         updatedBookLoan.setReturnCondition(returnConditionField.getValue());
         updatedBookLoan.setReturnConditionNotes(returnNotesField.getText());
         updatedBookLoan.setConditionNotes(conditionNotesField.getText());
+        updatedBookLoan.setBorrowCondition(borrowConditionField.getValue());
+        updatedBookLoan.setBorrowConditionNotes(borrowConditionNotesField.getText());
 
         return BookLoanController.editLoan(updatedBookLoan);
       }
