@@ -71,6 +71,10 @@
               <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>
             </padding>
           </CheckBox>
+          <VBox prefHeight="48.0" prefWidth="151.0">
+            <Label text="Role"/>
+            <ComboBox fx:id="roleComboBox" promptText="Role" styleClass="combo-box"/>
+          </VBox>
           <CheckBox fx:id="emailVerifiedCheckBox" text="Email Verified">
             <padding>
               <Insets bottom="5.0" left="10.0" right="10.0" top="5.0"/>

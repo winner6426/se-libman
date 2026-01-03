@@ -5,6 +5,9 @@ import javafx.scene.image.Image;
 import lombok.Data;
 // Removed NotNull annotation usage to avoid runtime annotation accessibility issues
 import org.json.JSONObject;
+import org.json.JSONArray;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 public class User {
@@ -21,6 +24,8 @@ public class User {
   private String lastLoginAt;
   private String providerId;
   private boolean admin;
+  // Single role per account (one of Role enum values). Default is "USER" for new accounts.
+  private String role = "USER";
   private boolean emailVerified;
   private boolean disabled;
   private Image avatar;
@@ -99,6 +104,22 @@ public class User {
     this.lastLoginAt = data.optString("lastLoginAt", "");
     this.providerId = data.optString("providerId", "");
     this.admin = data.optBoolean("admin", false);
+    // Read role if available (single-role system). Backwards compatibility: accept
+    // a `role` string or a `roles` array (take first element), otherwise fall back to admin flag.
+    if (data.has("role") && !data.isNull("role")) {
+      this.role = data.optString("role", "USER");
+    } else if (data.has("roles") && !data.isNull("roles")) {
+      JSONArray arr = data.optJSONArray("roles");
+      if (arr != null && arr.length() > 0) {
+        this.role = arr.optString(0, "USER");
+      }
+    } else if (this.admin) {
+      // Backwards compatibility: admin flag implies ADMIN role
+      this.role = "ADMIN";
+    } else {
+      // Default role
+      this.role = "USER";
+    }
     this.emailVerified = data.optBoolean("emailVerified", false);
     this.disabled = data.optBoolean("disabled", false);
 
@@ -130,7 +151,20 @@ public class User {
   }
 
   public boolean isAdmin() {
-    return this.admin;
+    // Prefer explicit role; keep admin flag compatibility
+    return this.admin || "ADMIN".equalsIgnoreCase(this.role);
+  }
+  public String getRole() { return this.role; }
+
+  public void setRole(String role) {
+    this.role = role == null ? "USER" : role;
+    // keep admin boolean in sync for compatibility
+    this.admin = "ADMIN".equalsIgnoreCase(this.role);
+  }
+
+  public boolean hasRole(String role) {
+    if (role == null) return false;
+    return role.equalsIgnoreCase(this.role);
   }
 
   // Additional explicit getters/setters used across controllers
@@ -152,7 +186,11 @@ public class User {
   public void setBirthday(String birthday) { this.birthday = birthday; }
   public void setUid(String uid) { this.uid = uid; }
   public void setPhotoUrl(String photoUrl) { this.photoUrl = photoUrl; if (photoUrl != null && !photoUrl.isEmpty()) setAvatar(photoUrl); }
-  public void setAdmin(boolean admin) { this.admin = admin; }
+  public void setAdmin(boolean admin) {
+    this.admin = admin;
+    if (admin) this.role = "ADMIN";
+    else if (this.role == null || "ADMIN".equalsIgnoreCase(this.role)) this.role = "USER";
+  }
   public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
   public void setDisabled(boolean disabled) { this.disabled = disabled; }
   public void setPassword(String password) { this.password = password; }

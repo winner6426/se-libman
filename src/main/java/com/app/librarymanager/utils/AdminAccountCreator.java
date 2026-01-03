@@ -32,6 +32,8 @@ public final class AdminAccountCreator {
       String birthday) {
     Firebase.getApp(); // ensures DEFAULT FirebaseApp exists before hitting FirebaseAuth
     User user = new User(email, password, displayName, birthday, null, true);
+    // Ensure ADMIN role is present for new admin seeds
+    user.setRole("ADMIN");
     user.setPhoneNumber("+84123456789");
 //    user.setEmail(email);
 //    user.setPassword(password);

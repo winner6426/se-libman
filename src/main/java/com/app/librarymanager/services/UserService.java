@@ -52,7 +52,9 @@ public class UserService {
       UserRecord userRecord = FirebaseAuth.getInstance().updateUser(request);
       Map<String, Object> userClaims = new HashMap<>();
       userClaims.put("birthday", user.getBirthday());
-      userClaims.put("admin", user.isAdmin());
+      String role = user.getRole() == null ? "USER" : user.getRole();
+      userClaims.put("role", role);
+      userClaims.put("admin", user.isAdmin() || "ADMIN".equalsIgnoreCase(role));
       FirebaseAuth.getInstance().setCustomUserClaims(user.getUid(), userClaims);
       AuthController.getInstance().getNewUserClaims();
       return new JSONObject().put("success", true)

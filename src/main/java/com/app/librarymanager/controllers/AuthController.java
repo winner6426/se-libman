@@ -309,7 +309,31 @@ public class AuthController {
         claims.put("lastLoginAt", new Date(user.getLong("lastLoginAt")));
         if (user.has("customAttributes")) {
           JSONObject customAttributes = new JSONObject(user.getString("customAttributes"));
-          claims.put("admin", customAttributes.optBoolean("admin", false));
+          // Extract single `role` if present; fall back to `roles` array (take first), otherwise use admin flag
+          if (customAttributes.has("role") && !customAttributes.isNull("role")) {
+            claims.put("role", customAttributes.optString("role", "USER"));
+            boolean isAdmin = customAttributes.optBoolean("admin", false) || "ADMIN".equalsIgnoreCase(customAttributes.optString("role", ""));
+            claims.put("admin", isAdmin);
+          } else if (customAttributes.has("roles") && !customAttributes.isNull("roles")) {
+            org.json.JSONArray arr = customAttributes.optJSONArray("roles");
+            if (arr != null && arr.length() > 0) {
+              claims.put("role", arr.optString(0, "USER"));
+              boolean isAdmin = customAttributes.optBoolean("admin", false);
+              if (!isAdmin) {
+                for (int i = 0; i < arr.length(); i++) {
+                  if ("ADMIN".equalsIgnoreCase(arr.optString(i, ""))) {
+                    isAdmin = true;
+                    break;
+                  }
+                }
+              }
+              claims.put("admin", isAdmin);
+            } else {
+              claims.put("admin", customAttributes.optBoolean("admin", false));
+            }
+          } else {
+            claims.put("admin", customAttributes.optBoolean("admin", false));
+          }
           claims.put("birthday", customAttributes.optString("birthday", ""));
         } else {
           claims.put("admin", false);

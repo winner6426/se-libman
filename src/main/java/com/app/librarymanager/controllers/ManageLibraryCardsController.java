@@ -162,7 +162,20 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
     Task<Void> task = new Task<>() {
       @Override
       protected Void call() {
-        LibraryCardController.approveCardWithMonths(card.get_id());
+        org.bson.Document resp = LibraryCardController.approveCardWithMonths(card.get_id());
+        // If card approved successfully, promote USER -> READER
+        if (resp != null) {
+          try {
+            com.app.librarymanager.models.User u = UserController.getUser(card.getUserId());
+            if (u != null && "USER".equalsIgnoreCase(u.getRole())) {
+              u.setRole("READER");
+              UserController.updateUser(u);
+            }
+          } catch (Exception ignore) {
+            // don't fail the approval flow if role update fails
+            System.err.println("Failed to update user role after card approval: " + ignore.getMessage());
+          }
+        }
         return null;
       }
     };

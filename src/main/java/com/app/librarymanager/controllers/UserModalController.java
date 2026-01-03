@@ -55,6 +55,8 @@ public class UserModalController extends ControllerWithLoader {
   @FXML
   private CheckBox adminCheckBox;
   @FXML
+  private javafx.scene.control.ComboBox<String> roleComboBox;
+  @FXML
   private CheckBox emailVerifiedCheckBox;
   @FXML
   private CheckBox disabledCheckBox;
@@ -111,6 +113,19 @@ public class UserModalController extends ControllerWithLoader {
     });
     imageStackPane.setOnMouseEntered(event -> changeAvatarLabel.setVisible(true));
     imageStackPane.setOnMouseExited(event -> changeAvatarLabel.setVisible(false));
+    // Populate role choices
+    roleComboBox.getItems().addAll("USER", "READER", "LIBRARIAN", "ADMIN", "ACCOUNTANT");
+    roleComboBox.setValue("USER");
+
+    // Keep admin checkbox in sync with role selection
+    roleComboBox.setOnAction(e -> {
+      String val = roleComboBox.getValue();
+      adminCheckBox.setSelected("ADMIN".equalsIgnoreCase(val));
+    });
+    adminCheckBox.setOnAction(e -> {
+      if (adminCheckBox.isSelected()) roleComboBox.setValue("ADMIN");
+      else if ("ADMIN".equals(roleComboBox.getValue())) roleComboBox.setValue("USER");
+    });
   }
 
   public void setUser(User user) {
@@ -125,6 +140,7 @@ public class UserModalController extends ControllerWithLoader {
           user.getBirthday() != null && !user.getBirthday().isEmpty() ? DateUtil.parse(
               user.getBirthday()) : null);
       adminCheckBox.setSelected(user.isAdmin());
+      roleComboBox.setValue(user.getRole() != null ? user.getRole() : "USER");
       emailVerifiedCheckBox.setSelected(user.isEmailVerified());
       disabledCheckBox.setSelected(user.isDisabled());
       displayName = user.getDisplayName();
@@ -194,6 +210,7 @@ public class UserModalController extends ControllerWithLoader {
     user.setPhoneNumber(phoneNumberField.getText());
     user.setBirthday(birthdayField.getEditor().getText().trim());
     user.setAdmin(adminCheckBox.isSelected());
+    user.setRole(roleComboBox.getValue() == null ? "USER" : roleComboBox.getValue());
     user.setEmailVerified(emailVerifiedCheckBox.isSelected());
     user.setDisabled(disabledCheckBox.isSelected());
     user.setPassword(passWordField.getText());

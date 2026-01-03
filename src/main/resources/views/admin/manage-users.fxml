@@ -40,6 +40,7 @@
         <TableColumn fx:id="displayNameColumn" text="Display Name"/>
         <TableColumn fx:id="phoneNumberColumn" text="Phone Number"/>
         <TableColumn fx:id="birthdayColumn" text="Birthday"/>
+        <TableColumn fx:id="rolesColumn" text="Roles"/>
         <TableColumn fx:id="adminColumn" text="Admin"/>
         <TableColumn fx:id="emailVerifiedColumn" text="Email Verified"/>
         <TableColumn fx:id="disabledColumn" text="Disabled"/>
