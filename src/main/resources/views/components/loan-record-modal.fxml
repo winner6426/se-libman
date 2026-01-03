@@ -44,12 +44,6 @@
       <DatePicker fx:id="processedAtField"/>
     </VBox>
     <VBox spacing="6">
-      <Label text="Return Requested"/>
-      <CheckBox fx:id="returnRequestedField"/>
-
-      <Label text="Return Requested At"/>
-      <DatePicker fx:id="returnRequestedAtField"/>
-
       <Label text="Returned By"/>
       <TextField fx:id="returnedByField"/>
 

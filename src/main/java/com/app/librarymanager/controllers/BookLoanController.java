@@ -374,12 +374,30 @@ public class BookLoanController {
       Map<String, User> relatedUser = new HashMap<>();
       try {
         List<String> uids = bookLoanDocs.stream().map(doc -> doc.getString("userId")).toList();
-        List<User> users = UserController.listUsers(uids);
-        if (users != null) {
+        // Use safer REST-based lookup to avoid Admin SDK runtime issues
+        List<User> users;
+        try {
+          users = UserController.listUsersSafe(uids);
+        } catch (Error err) {
+          System.err.println("BookLoanController.getAllLentBook: UserController.listUsersSafe threw Error: " + err);
+          try {
+            java.net.URL src = com.app.librarymanager.controllers.UserController.class.getProtectionDomain().getCodeSource().getLocation();
+            System.err.println("UserController.class loaded from: " + src);
+            java.net.URL src2 = com.app.librarymanager.services.FirebaseAuthentication.class.getProtectionDomain().getCodeSource().getLocation();
+            System.err.println("FirebaseAuthentication.class loaded from: " + src2);
+          } catch (Throwable ignore) {}
+          err.printStackTrace();
+          users = java.util.List.of();
+        } catch (Throwable t) {
+          System.err.println("BookLoanController.getAllLentBook: UserController.listUsersSafe threw: " + (t == null ? "null" : t.getMessage()));
+          t.printStackTrace();
+          users = java.util.List.of();
+        }
+        if (users != null && !users.isEmpty()) {
           relatedUser = users.stream().collect(Collectors.toMap(User::getUid, user -> user, (existing, replacement) -> existing));
         }
       } catch (Throwable t) {
-        System.err.println("BookLoanController.getAllLentBook: UserController.listUsers threw (" + t.getClass().getName() + "): " + t);
+        System.err.println("BookLoanController.getAllLentBook: unexpected throwable during user lookup: " + (t == null ? "null" : t.getMessage()));
         t.printStackTrace();
         relatedUser = new HashMap<>();
       }
@@ -392,9 +410,14 @@ public class BookLoanController {
         return bookLoanDocs.stream().map(
           doc -> new BookLoanUser(relatedUserFinal.get(doc.getString("userId")),
             relatedBookFinal.get(doc.getString("bookId")), new BookLoan(doc))).toList();
+    } catch (Error err) {
+      System.err.println("BookLoanController.getAllLentBook: Caught Error: " + err);
+      err.printStackTrace();
+      return new ArrayList<>();
     } catch (Exception e) {
       //  System.out.println(e.getMessage());
-      return null;
+      e.printStackTrace();
+      return new ArrayList<>();
     }
   }
 

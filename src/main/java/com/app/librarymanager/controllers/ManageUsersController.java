@@ -41,6 +41,8 @@ public class ManageUsersController extends ControllerWithLoader {
   @FXML
   private TableColumn<User, String> birthdayColumn;
   @FXML
+  private TableColumn<User, String> rolesColumn;
+  @FXML
   private TableColumn<User, Boolean> adminColumn;
   @FXML
   private TableColumn<User, Boolean> emailVerifiedColumn;
@@ -88,6 +90,7 @@ public class ManageUsersController extends ControllerWithLoader {
     displayNameColumn.setCellValueFactory(new PropertyValueFactory<>("displayName"));
     phoneNumberColumn.setCellValueFactory(new PropertyValueFactory<>("phoneNumber"));
     birthdayColumn.setCellValueFactory(new PropertyValueFactory<>("birthday"));
+    rolesColumn.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getRole()));
     adminColumn.setCellValueFactory(new PropertyValueFactory<>("admin"));
     emailVerifiedColumn.setCellValueFactory(new PropertyValueFactory<>("emailVerified"));
     disabledColumn.setCellValueFactory(new PropertyValueFactory<>("disabled"));
@@ -172,9 +175,25 @@ public class ManageUsersController extends ControllerWithLoader {
       @Override
       protected ObservableList<User> call() {
         ObservableList<User> users = FXCollections.observableArrayList();
-        List<User> response = UserController.listUsers();
-        if (response == null) {
-          AlertDialog.showAlert("error", "Error", "Failed to load users", null);
+        // Use safe variant that won't propagate Errors from the Admin SDK
+        List<User> response;
+        try {
+          response = UserController.listAllUsersSafe();
+        } catch (Error err) {
+          System.err.println("ManageUsersController.loadUsers: UserController.listAllUsersSafe threw Error: " + err);
+          try {
+            java.net.URL src = com.app.librarymanager.controllers.UserController.class.getProtectionDomain().getCodeSource().getLocation();
+            System.err.println("UserController.class loaded from: " + src);
+          } catch (Throwable ignore) {}
+          err.printStackTrace();
+          response = new java.util.ArrayList<>();
+        } catch (Throwable t) {
+          System.err.println("ManageUsersController.loadUsers: UserController.listAllUsersSafe threw: " + (t == null ? "null" : t.getMessage()));
+          t.printStackTrace();
+          response = new java.util.ArrayList<>();
+        }
+        if (response == null || response.isEmpty()) {
+          // Return empty list; UI will show a friendly retry prompt in setOnSucceeded
           return users;
         }
         users.addAll(response);
@@ -189,6 +208,13 @@ public class ManageUsersController extends ControllerWithLoader {
       //  System.out.println("Users loaded successfully. Total: " + usersList.size());
       showLoading(false);
       totalUsersText.setText("Total Users: " + usersList.size());
+      // If no users were loaded, show a helpful alert with retry option
+      if (usersList.isEmpty()) {
+        boolean retry = AlertDialog.showConfirm("Load Users Failed", "Failed to load users. Would you like to retry?");
+        if (retry) {
+          loadUsers();
+        }
+      }
     });
     task.setOnFailed(e -> {
       //  System.out.println("Error while fetching users: " + task.getException().getMessage());

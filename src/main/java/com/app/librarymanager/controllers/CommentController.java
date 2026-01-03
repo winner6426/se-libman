@@ -73,7 +73,7 @@ public class CommentController {
           .filter(Objects::nonNull).filter(s -> !s.isEmpty()).toList();
       List<User> users = null;
       try {
-        users = UserController.listUsers(ids);
+        users = UserController.listUsersSafe(ids);
       } catch (Throwable t) {
         System.err.println("CommentController.getAllCommentOfBook: failed to fetch users: " + t.getMessage());
         t.printStackTrace();
