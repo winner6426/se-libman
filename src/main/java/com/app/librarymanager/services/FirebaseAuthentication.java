@@ -87,7 +87,10 @@ public class FirebaseAuthentication {
       try {
         String localId = response.getString("localId");
         Map<String, Object> claims = new HashMap<>();
-        claims.put("admin", user.isAdmin());
+        // Support single role system; keep `admin` boolean for compatibility.
+        String role = user.getRole() == null ? "USER" : user.getRole();
+        claims.put("role", role);
+        claims.put("admin", user.isAdmin() || "ADMIN".equalsIgnoreCase(role));
         claims.put("birthday", user.getBirthday());
         FirebaseAuth.getInstance().setCustomUserClaims(localId, claims);
         response.put("claims", claims);
@@ -114,7 +117,9 @@ public class FirebaseAuthentication {
       UserRecord userRecord = FirebaseAuth.getInstance().createUser(request);
       JSONObject response = new JSONObject(userRecord);
       Map<String, Object> claims = new HashMap<>();
-      claims.put("admin", user.isAdmin());
+      String role = user.getRole() == null ? "USER" : user.getRole();
+      claims.put("role", role);
+      claims.put("admin", user.isAdmin() || "ADMIN".equalsIgnoreCase(role));
       claims.put("birthday", user.getBirthday());
       FirebaseAuth.getInstance().setCustomUserClaims(userRecord.getUid(), claims);
       response.put("claims", claims);

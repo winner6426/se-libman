@@ -41,10 +41,6 @@ public class LoanRecordModalController extends ControllerWithLoader {
   private DatePicker processedAtField;
 
   @FXML
-  private CheckBox returnRequestedField;
-  @FXML
-  private DatePicker returnRequestedAtField;
-  @FXML
   private TextField returnedByField;
   @FXML
   private DatePicker returnedAtField;
@@ -72,7 +68,7 @@ public class LoanRecordModalController extends ControllerWithLoader {
     DatePickerUtil.setDatePickerFormat(dueDateField);
     DatePickerUtil.setDatePickerFormat(requestDateField);
     DatePickerUtil.setDatePickerFormat(processedAtField);
-    DatePickerUtil.setDatePickerFormat(returnRequestedAtField);
+    // Return request UI removed: no need to format returnRequestedAt
     DatePickerUtil.setDatePickerFormat(returnedAtField);
     DatePickerUtil.disableEditor(borrowDateField);
     DatePickerUtil.disableEditor(dueDateField);
@@ -97,8 +93,7 @@ public class LoanRecordModalController extends ControllerWithLoader {
     processedByField.setText(loan.getProcessedBy() != null ? loan.getProcessedBy() : "");
     processedAtField.setValue(DateUtil.dateToLocalDate(loan.getProcessedAt()));
 
-    returnRequestedField.setSelected(loan.isReturnRequested());
-    returnRequestedAtField.setValue(DateUtil.dateToLocalDate(loan.getReturnRequestedAt()));
+    // Return request fields removed per UI change
     returnedByField.setText(loan.getReturnedBy() != null ? loan.getReturnedBy() : "");
     returnedAtField.setValue(DateUtil.dateToLocalDate(loan.getReturnedAt()));
 
@@ -152,8 +147,7 @@ public class LoanRecordModalController extends ControllerWithLoader {
         updatedBookLoan.setProcessedBy(processedByField.getText());
         updatedBookLoan.setProcessedAt(DateUtil.localDateToDate(processedAtField.getValue()));
 
-        updatedBookLoan.setReturnRequested(returnRequestedField.isSelected());
-        updatedBookLoan.setReturnRequestedAt(DateUtil.localDateToDate(returnRequestedAtField.getValue()));
+        // Return request fields removed; do not modify returnRequested flags here
         updatedBookLoan.setReturnedBy(returnedByField.getText());
         updatedBookLoan.setReturnedAt(DateUtil.localDateToDate(returnedAtField.getValue()));
         updatedBookLoan.setReturnCondition(returnConditionField.getValue());

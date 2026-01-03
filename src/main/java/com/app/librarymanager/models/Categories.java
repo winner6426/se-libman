@@ -55,6 +55,8 @@ public class Categories {
     this.lastUpdated = lastUpdated;
   }
 
+  public Date getLastUpdated() { return this.lastUpdated; }
+
   public ObjectId get_id() { return this._id; }
   public void set_id(ObjectId _id) { this._id = _id; }
 

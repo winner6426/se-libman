@@ -23,7 +23,7 @@
       <!--        </ImageView>-->
       <!--      </HBox>-->
       <!--      <Separator styleClass="h-separator"/>-->
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleShowDashboard"
+      <Button fx:id="btnDashboard" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleShowDashboard"
         styleClass="btn, btn-toolbar, active">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -32,7 +32,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageBooks"
+      <Button fx:id="btnManageBooks" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageBooks"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -41,7 +41,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageBookLoans"
+      <Button fx:id="btnManageLoans" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageBookLoans"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -51,7 +51,7 @@
         </graphic>
       </Button>
       <!-- Loan Records removed per request -->
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageReturns"
+      <Button fx:id="btnManageReturns" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageReturns"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -61,7 +61,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageLoanRequests"
+      <Button fx:id="btnManageRequests" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageLoanRequests"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -70,7 +70,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageUsers"
+      <Button fx:id="btnManageUsers" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageUsers"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -79,7 +79,7 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageCategories"
+      <Button fx:id="btnManageCategories" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageCategories"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
@@ -88,12 +88,21 @@
           </HBox>
         </graphic>
       </Button>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageCards"
+      <Button fx:id="btnManageCards" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageCards"
         styleClass="btn, btn-toolbar">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
             <Text text="🆔" styleClass="toolbar-icon"/>
             <Text text="Cards"/>
+          </HBox>
+        </graphic>
+      </Button>
+      <Button fx:id="btnRolePermissions" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleRolePermissions"
+        styleClass="btn, btn-toolbar">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <Text text="🔐" styleClass="toolbar-icon"/>
+            <Text text="Role Permissions"/>
           </HBox>
         </graphic>
       </Button>

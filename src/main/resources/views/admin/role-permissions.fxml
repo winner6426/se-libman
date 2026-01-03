@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/17.0.6" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="com.app.librarymanager.controllers.RolePermissionsController">
+  <VBox spacing="10" AnchorPane.topAnchor="10.0" AnchorPane.leftAnchor="10.0"
+    AnchorPane.rightAnchor="10.0" AnchorPane.bottomAnchor="10.0">
+    <!-- Role selector and actions -->
+    <HBox spacing="10" alignment="CENTER_LEFT">
+      <Label text="Role:"/>
+      <ComboBox fx:id="roleCombo" prefWidth="160"/>
+      <Button text="Refresh" onAction="#onRefresh" styleClass="btn,btn-text"/>
+      <Region HBox.hgrow="ALWAYS"/>
+      <Button text="Save" onAction="#onSave" styleClass="btn,btn-primary"/>
+    </HBox>
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+      <HBox spacing="24">
+        <VBox spacing="8" fx:id="usersColumn">
+          <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+          </padding>
+          <Label text="Users feature" styleClass="content-subtitle"/>
+          <TableView fx:id="usersTable" VBox.vgrow="ALWAYS">
+            <columns>
+              <TableColumn fx:id="usersFeatureColumn" text="Feature"/>
+              <TableColumn fx:id="usersAccessColumn" text="Access"/>
+              <TableColumn fx:id="usersVisibleColumn" text="Visible"/>
+            </columns>
+          </TableView>
+        </VBox>
+        <VBox spacing="8" fx:id="staffColumn">
+          <padding>
+            <Insets top="10" right="10" bottom="10" left="10"/>
+          </padding>
+          <Label text="Staff feature" styleClass="content-subtitle"/>
+          <TableView fx:id="staffTable" VBox.vgrow="ALWAYS">
+            <columns>
+              <TableColumn fx:id="staffFeatureColumn" text="Feature"/>
+              <TableColumn fx:id="staffAccessColumn" text="Access"/>
+              <TableColumn fx:id="staffVisibleColumn" text="Visible"/>
+            </columns>
+          </TableView>
+        </VBox>
+      </HBox>
+    </ScrollPane>
+  </VBox>
+</AnchorPane>

@@ -258,13 +258,13 @@ public class MyLoansController extends ControllerWithLoader {
     title.getStyleClass().add("link");
     HBox actionButtons = new HBox();
     actionButtons.setAlignment(Pos.CENTER_LEFT);
-    Button returnButton = new Button("Request Return");
+    // 'Request Return' option removed for users; returns are handled by librarians
     Button reBorrowButton = new Button("Re-borrow");
     Button readButton = new Button("Read");
     Button cancelRequestButton = new Button("Cancel");
 
     reBorrowButton.getStyleClass().addAll("btn", "btn-default");
-    returnButton.getStyleClass().addAll("btn", "btn-danger");
+    // returnButton removed
     readButton.getStyleClass().addAll("btn", "btn-primary");
     cancelRequestButton.getStyleClass().addAll("btn", "btn-danger");
 
@@ -302,11 +302,7 @@ public class MyLoansController extends ControllerWithLoader {
     statusLabel.setText(statusText);
     statusLabel.getStyleClass().addAll("chip", statusText.toLowerCase());
     HBox chips = new HBox(type, statusLabel);
-    if (loan.isReturnRequested()) {
-      Label returnReq = new Label("RETURN REQUESTED");
-      returnReq.getStyleClass().addAll("chip", "return-requested");
-      chips.getChildren().add(returnReq);
-    }
+    // 'RETURN REQUESTED' notification removed from user view
 
     Region spacer = new Region();
     VBox.setVgrow(spacer, Priority.ALWAYS);
@@ -320,21 +316,22 @@ public class MyLoansController extends ControllerWithLoader {
     // actions depend on status
     if (BookLoan.Status.PENDING.equals(loan.getStatus())) {
       // pending - allow user to cancel their request
-      returnButton.setVisible(false);
-      returnButton.setManaged(false);
       reBorrowButton.setVisible(false);
       reBorrowButton.setManaged(false);
       cancelRequestButton.setVisible(true);
       cancelRequestButton.setManaged(true);
       cancelRequestButton.setOnAction(event -> handleCancelRequest(item));
     } else {
-      // rejected or expired
-      // hide return button by default for users - returns are processed by librarians
-      returnButton.setVisible(false);
-      returnButton.setManaged(false);
-      reBorrowButton.setVisible(true);
-      reBorrowButton.setOnAction(
-          event -> handleBookLoanClick(item.getBookLoan().getBookId(), content));
+      // rejected, expired, or other non-pending states
+      // Show Re-borrow only when the loan status is NOT AVAILABLE (and already not PENDING by this branch)
+      boolean canReBorrow = !BookLoan.Status.AVAILABLE.equals(loan.getStatus());
+      reBorrowButton.setVisible(canReBorrow);
+      reBorrowButton.setManaged(canReBorrow);
+      if (canReBorrow) {
+        reBorrowButton.setOnAction(event -> handleBookLoanClick(item.getBookLoan().getBookId(), content));
+      } else {
+        reBorrowButton.setOnAction(null);
+      }
     }
     if (Mode.ONLINE.equals(loan.getType())) {
       readButton.setVisible(BookLoan.Status.AVAILABLE.equals(loan.getStatus()));
@@ -348,7 +345,7 @@ public class MyLoansController extends ControllerWithLoader {
     // hide cancel by default; only visible/managed for PENDING
     cancelRequestButton.setVisible(false);
     cancelRequestButton.setManaged(false);
-    actionButtons.getChildren().addAll(returnButton, reBorrowButton, readButton, cancelRequestButton);
+    actionButtons.getChildren().addAll(reBorrowButton, readButton, cancelRequestButton);
     actionButtons.setSpacing(5);
     details.getChildren().addAll(title, dates, borrowNotes, returnNotes, numCopies, chips, spacer, actionButtons);
     content.getChildren().addAll(thumbnail, details);
@@ -365,39 +362,7 @@ public class MyLoansController extends ControllerWithLoader {
     AlertDialog.showAlert("info", "Info", "Returning books must be processed by librarians. Use Request Return instead.", null);
   }
 
-  private void handleRequestReturn(ReturnBookLoan item) {
-    if (!AlertDialog.showConfirm("Request return", "Are you sure you want to request a return for this loan?")) {
-      return;
-    }
-
-    BookLoan bookLoan = item.getBookLoan();
-    Task<Document> task = new Task<>() {
-      @Override
-      protected Document call() {
-        return BookLoanController.requestReturn(bookLoan.get_id());
-      }
-    };
-
-    setLoadingText("Requesting return...");
-
-    task.setOnSucceeded(event -> {
-      setLoadingText(null);
-      AlertDialog.showAlert("success", "Success", "Return requested. A librarian will process this return.", null);
-      Document result = task.getValue();
-      if (result != null) {
-        BookLoan updated = new BookLoan(result);
-        item.setBookLoan(updated);
-        updateLoanInFlowPane(item);
-      }
-    });
-
-    task.setOnFailed(event -> {
-      setLoadingText(null);
-      AlertDialog.showAlert("error", "Error", "Failed to request return", null);
-    });
-
-    new Thread(task).start();
-  }
+  // Request return flow removed: users cannot request returns; librarians handle returns.
 
   private void handleCancelRequest(ReturnBookLoan item) {
     BookLoan bookLoan = item.getBookLoan();

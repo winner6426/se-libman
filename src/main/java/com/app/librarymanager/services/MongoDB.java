@@ -113,8 +113,6 @@ public class MongoDB {
       MongoCollection<Document> collection = database.getCollection(collectionName);
       Document toInsert = new Document(data).append("_id", new ObjectId())
           .append("lastUpdated", new Timestamp(System.currentTimeMillis()));
-      InsertOneResult result = collection.insertOne(toInsert);
-      //  System.out.println("Success! Inserted document id: " + result.getInsertedId());
       return toInsert;
     } catch (Exception e) {
       System.err.println("MongoDB.addToCollection: failed to insert into '" + collectionName + "': " + e.getMessage());
@@ -136,7 +134,11 @@ public class MongoDB {
     try {
       List<Document> result = new ArrayList<>();
       MongoCollection<Document> collection = database.getCollection(collectionName);
-      collection.find(filter).forEach(result::add);
+      if (filter == null) {
+        collection.find().forEach(result::add);
+      } else {
+        collection.find(filter).forEach(result::add);
+      }
       return result;
     } catch (Exception e) {
       //  System.err.println("Error when trying to find at " + collectionName);

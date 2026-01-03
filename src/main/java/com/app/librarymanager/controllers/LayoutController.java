@@ -3,6 +3,7 @@ package com.app.librarymanager.controllers;
 import com.app.librarymanager.interfaces.AuthStateListener;
 import com.app.librarymanager.models.User;
 import com.app.librarymanager.config.FeatureFlags;
+import com.app.librarymanager.services.PermissionService;
 import com.app.librarymanager.utils.AlertDialog;
 import com.app.librarymanager.utils.AvatarUtil;
 import com.app.librarymanager.utils.StageManager;
@@ -36,7 +37,11 @@ public class LayoutController implements AuthStateListener {
     return instance;
   }
 
-  private List<String> ADMIN_ROUTES;
+  private List<String> ADMIN_ROUTES = List.of("/views/admin/dashboard.fxml",
+      "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
+      "/views/admin/manage-loans.fxml", "/views/admin/manage-returns.fxml",
+      "/views/admin/manage-categories.fxml", "/views/admin/manage-cards.fxml",
+      "/views/admin/role-permissions.fxml");
 
   private final List<String> USER_ROUTES = List.of("/views/home.fxml", "/views/profile.fxml",
       "/views/my-card.fxml");
@@ -53,6 +58,24 @@ public class LayoutController implements AuthStateListener {
   @FXML
   private Button cardNavBtn;
   @FXML
+  private Button btnDashboard;
+  @FXML
+  private Button btnManageBooks;
+  @FXML
+  private Button btnManageLoans;
+  @FXML
+  private Button btnManageReturns;
+  @FXML
+  private Button btnManageRequests;
+  @FXML
+  private Button btnManageUsers;
+  @FXML
+  private Button btnManageCategories;
+  @FXML
+  private Button btnManageCards;
+  @FXML
+  private Button btnRolePermissions;
+  @FXML
   private ToolBar adminToolBar;
   @FXML
   private ToolBar navBar;
@@ -60,6 +83,8 @@ public class LayoutController implements AuthStateListener {
   private StackPane contentPane;
   @FXML
   private ImageView avatarImageView;
+  @FXML
+  private Button logoutBtn;
   @FXML
   private TextField searchField;
   @FXML
@@ -83,16 +108,17 @@ public class LayoutController implements AuthStateListener {
       User currentUser = AuthController.getInstance().getCurrentUser();
 //      preloadComponents(currentUser);
       updateUI(true, currentUser);
-      if (currentUser.isAdmin()) {
-        // build admin routes dynamically to support optional features
-        ADMIN_ROUTES = List.of("/views/admin/dashboard.fxml",
-            "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
-            "/views/admin/manage-loans.fxml", "/views/admin/manage-returns.fxml", "/views/admin/manage-categories.fxml",
-            "/views/admin/manage-cards.fxml");
-        // Loan Records feature removed from UI per request - no route added
-
-        loadComponent("/views/admin/dashboard.fxml");
-
+      // Determine if user has any admin routes allowed
+      var allowed = PermissionService.getInstance().getAllowedRoutes(currentUser.getRole());
+      boolean hasAnyAdminAccess = currentUser.isAdmin() || allowed.stream().anyMatch(ADMIN_ROUTES::contains);
+      if (hasAnyAdminAccess) {
+        // If admin, load dashboard; otherwise load the first admin route the role is allowed to access
+        if (currentUser.isAdmin()) {
+          loadComponent("/views/admin/dashboard.fxml");
+        } else {
+          String first = ADMIN_ROUTES.stream().filter(allowed::contains).findFirst().orElse("/views/home.fxml");
+          loadComponent(first);
+        }
       } else {
         loadComponent("/views/home.fxml");
       }
@@ -105,8 +131,20 @@ public class LayoutController implements AuthStateListener {
     searchField.setOnAction(event -> handleSearch());
     allBooksNavBtn.setOnAction(event -> handleSearch());
 
-    homeNavBtn.setOnAction(event -> loadComponent("/views/home.fxml"));
-    categoriesNavBtn.setOnAction(event -> loadComponent("/views/categories.fxml"));
+    homeNavBtn.setOnAction(event -> {
+      if (!canAccessRoute("/views/home.fxml")) {
+        AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Home.", null);
+        return;
+      }
+      loadComponent("/views/home.fxml");
+    });
+    categoriesNavBtn.setOnAction(event -> {
+      if (!canAccessRoute("/views/categories.fxml")) {
+        AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Categories.", null);
+        return;
+      }
+      loadComponent("/views/categories.fxml");
+    });
     loansNavBtn.setOnAction(event -> {
       System.out.println("My Loans button clicked");
       // If user is not authenticated, open login window immediately (more responsive)
@@ -114,17 +152,29 @@ public class LayoutController implements AuthStateListener {
         StageManager.showLoginWindow();
         return;
       }
+      if (!canAccessRoute("/views/loans.fxml")) {
+        AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access My Loans.", null);
+        return;
+      }
       loadComponent("/views/loans.fxml");
     });
     favoritesNavBtn.setOnAction(event -> {
       AuthController.requireLogin();
       if (AuthController.getInstance().isAuthenticated()) {
+        if (!canAccessRoute("/views/favorite-books.fxml")) {
+          AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Favorites.", null);
+          return;
+        }
         loadComponent("/views/favorite-books.fxml");
       }
     });
     cardNavBtn.setOnAction(event -> {
       AuthController.requireLogin();
       if (AuthController.getInstance().isAuthenticated()) {
+        if (!canAccessRoute("/views/my-card.fxml")) {
+          AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access My Card.", null);
+          return;
+        }
         loadComponent("/views/my-card.fxml");
       }
     });
@@ -170,8 +220,9 @@ public class LayoutController implements AuthStateListener {
   }
 
   private void updateUI(boolean isAuthenticated, User user) {
-    adminToolBar.setVisible(isAuthenticated && user.isAdmin());
-    adminToolBar.setManaged(isAuthenticated && user.isAdmin());
+    boolean hasAdminToolbar = isAuthenticated && (user.isAdmin() || !PermissionService.getInstance().getAllowedRoutes(user.getRole()).isEmpty());
+    adminToolBar.setVisible(hasAdminToolbar);
+    adminToolBar.setManaged(hasAdminToolbar);
     if (isAuthenticated) {
       if (user.getAvatar() != null) {
         avatarImageView.setImage(user.getAvatar());
@@ -213,6 +264,7 @@ public class LayoutController implements AuthStateListener {
       avatarImageView.setImage(
           new ImageView(new AvatarUtil().getAvatarUrl("Anonymous")).getImage());
     }
+    updateNavVisibility(user);
   }
 
   @FXML
@@ -276,10 +328,8 @@ public class LayoutController implements AuthStateListener {
 
   @FXML
   void handleManageLoanRequests(Event e) {
-    // Check admin privileges before loading
-    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
-        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
-      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Requests.", null);
+    if (!canAccessAdminRoute("/views/admin/manage-loan-requests.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Loan Requests.", null);
       return;
     }
     handleChangeActiveButton(e);
@@ -290,9 +340,8 @@ public class LayoutController implements AuthStateListener {
 
   @FXML
   void handleManageReturns(Event e) {
-    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null
-        || !AuthController.getInstance().getCurrentUser().isAdmin()) {
-      AlertDialog.showAlert("error", "Access Denied", "You must be an admin to access Returns.", null);
+    if (!canAccessAdminRoute("/views/admin/manage-returns.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Returns.", null);
       return;
     }
     handleChangeActiveButton(e);
@@ -301,14 +350,93 @@ public class LayoutController implements AuthStateListener {
 
   @FXML
   public void handleManageCategories(Event e) {
+    if (!canAccessAdminRoute("/views/admin/manage-categories.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Categories.", null);
+      return;
+    }
     handleChangeActiveButton(e);
     loadComponent("/views/admin/manage-categories.fxml");
   }
 
   @FXML
   public void handleManageCards(Event e) {
+    if (!canAccessAdminRoute("/views/admin/manage-cards.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Cards.", null);
+      return;
+    }
     handleChangeActiveButton(e);
     loadComponent("/views/admin/manage-cards.fxml");
+  }
+
+  @FXML
+  public void handleRolePermissions(Event e) {
+    if (!canAccessAdminRoute("/views/admin/role-permissions.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Role Permissions.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/role-permissions.fxml");
+  }
+
+  private boolean canAccessAdminRoute(String route) {
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) return false;
+    User user = AuthController.getInstance().getCurrentUser();
+    return user.isAdmin() || PermissionService.getInstance().hasAccess(user.getRole(), route);
+  }
+
+  private boolean canAccessRoute(String route) {
+    // If not authenticated, treat user as GUEST and check GUEST permissions
+    if (!AuthController.getInstance().isAuthenticated() || AuthController.getInstance().getCurrentUser() == null) {
+      return PermissionService.getInstance().hasAccess("GUEST", route);
+    }
+    User user = AuthController.getInstance().getCurrentUser();
+    return user.isAdmin() || PermissionService.getInstance().hasAccess(user.getRole(), route);
+  }
+
+  private void updateNavVisibility(User user) {
+    String role;
+    boolean isAdmin = false;
+    if (user == null) {
+      // Treat unauthenticated visitors as GUEST
+      role = "GUEST";
+      isAdmin = false;
+      // admin toolbar hidden for guests by default (will be enforced again below)
+    } else {
+      role = user.getRole();
+      isAdmin = user.isAdmin();
+      // Determine if the role has any allowed admin routes or visible admin routes
+    }
+
+    // Debug prints removed
+
+    // Determine if any staff features are visible for this role
+    boolean anyStaffVisible = ADMIN_ROUTES.stream().anyMatch(r -> PermissionService.getInstance().hasVisibility(role, r));
+
+    // If no staff feature is visible, hide the logout button and entire left toolbar
+    logoutBtn.setVisible(anyStaffVisible);
+    logoutBtn.setManaged(anyStaffVisible);
+
+    // Hide the entire admin toolbar when no staff features are visible (collapse left area)
+    adminToolBar.setVisible(anyStaffVisible);
+    adminToolBar.setManaged(anyStaffVisible);
+
+    // Top nav buttons
+    homeNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/home.fxml"));
+    allBooksNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/search.fxml"));
+    categoriesNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/categories.fxml"));
+    loansNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/loans.fxml"));
+    favoritesNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/favorite-books.fxml"));
+    cardNavBtn.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/my-card.fxml"));
+    // Admin toolbar buttons
+    btnDashboard.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/dashboard.fxml"));
+    btnManageBooks.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-books.fxml"));
+    btnManageLoans.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-loans.fxml"));
+    btnManageReturns.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-returns.fxml"));
+    btnManageRequests.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-loan-requests.fxml"));
+    btnManageUsers.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-users.fxml"));
+    btnManageCategories.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-categories.fxml"));
+    btnManageCards.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-cards.fxml"));
+    btnRolePermissions.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/role-permissions.fxml"));
   }
 
   @FXML
@@ -319,19 +447,29 @@ public class LayoutController implements AuthStateListener {
 
   @FXML
   private void onLogoutButtonClick() {
+    // Hide popup immediately
     popup.hide();
-    loadComponent("/views/home.fxml");
+
+    // Perform logout first so Auth state is cleared
+    AuthController.getInstance().logout();
+
+    // Ensure search field is restored if it was loaded
     if (isSearchComponentLoaded) {
       navBar.getItems().add(2, searchField);
       searchField.clear();
       isSearchComponentLoaded = false;
     }
-    if (AuthController.getInstance().getCurrentUser().isAdmin()) {
-      adminToolBar.getItems().stream().filter(node -> node instanceof Button)
-          .map(node -> (Button) node).filter(button -> button.getStyleClass().contains("active"))
-          .forEach(button -> button.getStyleClass().remove("active"));
-    }
-    AuthController.getInstance().logout();
+
+    // Remove any active styles on admin toolbar buttons (defensive: works even if no admin was logged in)
+    adminToolBar.getItems().stream().filter(node -> node instanceof Button)
+        .map(node -> (Button) node).filter(button -> button.getStyleClass().contains("active"))
+        .forEach(button -> button.getStyleClass().remove("active"));
+
+    // Immediately update UI to guest (not keeping previous user's UI state)
+    updateUI(false, null);
+
+    // Load guest home view
+    loadComponent("/views/home.fxml");
   }
 
   @FXML
@@ -342,6 +480,15 @@ public class LayoutController implements AuthStateListener {
   @Override
   public void onAuthStateChanged(boolean isAuthenticated) {
     updateUI(isAuthenticated, AuthController.getInstance().getCurrentUser());
+  }
+
+  /**
+   * Re-evaluate navigation visibility for the current auth state/user.
+   * Public so other controllers (e.g., RolePermissionsController) can force
+   * an immediate UI refresh after permission changes.
+   */
+  public void refreshNavForCurrentUser() {
+    updateUI(AuthController.getInstance().isAuthenticated(), AuthController.getInstance().getCurrentUser());
   }
 
   private void handleChangeActiveButton(Event e) {

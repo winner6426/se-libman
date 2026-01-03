@@ -137,7 +137,7 @@ public class ManageLoanRequestsController extends ControllerWithLoader {
             .toList();
         List<User> users = null;
         try {
-          users = UserController.listUsers(ids);
+          users = UserController.listUsersSafe(ids);
         } catch (Throwable t) {
           System.err.println("ManageLoanRequestsController: UserController.listUsers threw: " + t.getMessage());
           t.printStackTrace();
