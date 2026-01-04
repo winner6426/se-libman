@@ -97,6 +97,15 @@
           </HBox>
         </graphic>
       </Button>
+      <Button fx:id="btnManageTransactions" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleManageTransactions"
+        styleClass="btn, btn-toolbar">
+        <graphic>
+          <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">
+            <Text text="💰" styleClass="toolbar-icon"/>
+            <Text text="Transactions"/>
+          </HBox>
+        </graphic>
+      </Button>
       <Button fx:id="btnRolePermissions" maxWidth="Infinity" mnemonicParsing="false" onAction="#handleRolePermissions"
         styleClass="btn, btn-toolbar">
         <graphic>

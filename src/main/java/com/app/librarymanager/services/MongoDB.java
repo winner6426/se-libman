@@ -113,6 +113,10 @@ public class MongoDB {
       MongoCollection<Document> collection = database.getCollection(collectionName);
       Document toInsert = new Document(data).append("_id", new ObjectId())
           .append("lastUpdated", new Timestamp(System.currentTimeMillis()));
+
+      collection.insertOne(toInsert);
+      //System.out.println("Successfully inserted document into collection: " + collectionName);
+
       return toInsert;
     } catch (Exception e) {
       System.err.println("MongoDB.addToCollection: failed to insert into '" + collectionName + "': " + e.getMessage());

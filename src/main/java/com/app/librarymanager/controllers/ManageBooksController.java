@@ -677,6 +677,14 @@ public class ManageBooksController extends ControllerWithLoader {
         double unitPrice = finalBook.getDiscountPrice() > 0 ? finalBook.getDiscountPrice() : finalBook.getPrice();
         double totalRevenue = finalQuantity * unitPrice;
 
+        // Create transaction record
+        TransactionController.createSellBookTransaction(
+            finalBook.getTitle(), 
+            finalQuantity, 
+            unitPrice, 
+            finalBook.getCurrencyCode()
+        );
+
         // Show success message with revenue
         String message = String.format(
             "Successfully sold %d copy/copies of '%s'.\n\nRevenue: %.2f %s",

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="com.app.librarymanager.controllers.TransactionModalController"
+  styleClass="modal-content">
+  
+  <!-- Main Form Content -->
+  <VBox spacing="15">
+    <padding>
+      <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
+    </padding>
+
+    <!-- Transaction ID (read-only for edit) -->
+    <VBox spacing="5">
+      <Label text="Transaction ID:" styleClass="form-label"/>
+      <TextField fx:id="idField" promptText="Auto-generated" styleClass="input" disable="true"/>
+    </VBox>
+
+    <!-- Type -->
+    <VBox spacing="5">
+      <Label text="Type:" styleClass="form-label"/>
+      <ComboBox fx:id="typeField" promptText="Select type" styleClass="combo-box" 
+        maxWidth="Infinity" prefWidth="400"/>
+    </VBox>
+
+    <!-- Date -->
+    <VBox spacing="5">
+      <Label text="Date:" styleClass="form-label"/>
+      <DatePicker fx:id="dateField" promptText="Select date" styleClass="date-picker" 
+        maxWidth="Infinity" prefWidth="400"/>
+    </VBox>
+
+    <!-- Amount -->
+    <VBox spacing="5">
+      <Label text="Amount:" styleClass="form-label"/>
+      <HBox spacing="10" alignment="CENTER_LEFT">
+        <TextField fx:id="amountField" promptText="Enter amount (negative for expense)" 
+          styleClass="input" prefWidth="300"/>
+        <Label text="(+ income, - expense)" styleClass="hint-text"/>
+      </HBox>
+    </VBox>
+
+    <!-- Currency Code -->
+    <VBox spacing="5">
+      <Label text="Currency Code:" styleClass="form-label"/>
+      <TextField fx:id="currencyCodeField" promptText="e.g., VND, USD" 
+        styleClass="input" prefWidth="150"/>
+    </VBox>
+
+    <!-- Note -->
+    <VBox spacing="5">
+      <Label text="Note:" styleClass="form-label"/>
+      <TextArea fx:id="noteField" promptText="Enter transaction details..." 
+        styleClass="text-area" prefRowCount="4" wrapText="true"/>
+    </VBox>
+  </VBox>
+
+  <!-- Loading Overlay -->
+  <VBox fx:id="loadingOverlay" visible="false" styleClass="loading-wrapper"
+    alignment="CENTER" style="-fx-background-color: rgba(0, 0, 0, 0.5);">
+    <VBox styleClass="loading-inner" alignment="CENTER" maxWidth="200" 
+      style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 10;">
+      <ProgressIndicator fx:id="loadingSpinner" maxHeight="100" maxWidth="100"/>
+      <Text fx:id="loadingText" text="Loading..."/>
+      <Button fx:id="cancelButton" text="Cancel" styleClass="btn, btn-text" visible="false"/>
+    </VBox>
+  </VBox>
+</StackPane>

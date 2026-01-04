@@ -40,7 +40,7 @@ public class LayoutController implements AuthStateListener {
       "/views/admin/manage-books.fxml", "/views/admin/manage-users.fxml",
       "/views/admin/manage-loans.fxml", "/views/admin/manage-returns.fxml",
       "/views/admin/manage-categories.fxml", "/views/admin/manage-cards.fxml",
-      "/views/admin/role-permissions.fxml");
+      "/views/admin/manage-transactions.fxml", "/views/admin/role-permissions.fxml");
 
   private final List<String> USER_ROUTES = List.of("/views/home.fxml", "/views/profile.fxml",
       "/views/my-card.fxml");
@@ -72,6 +72,8 @@ public class LayoutController implements AuthStateListener {
   private Button btnManageCategories;
   @FXML
   private Button btnManageCards;
+  @FXML
+  private Button btnManageTransactions;
   @FXML
   private Button btnRolePermissions;
   @FXML
@@ -368,6 +370,16 @@ public class LayoutController implements AuthStateListener {
   }
 
   @FXML
+  public void handleManageTransactions(Event e) {
+    if (!canAccessAdminRoute("/views/admin/manage-transactions.fxml")) {
+      AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Transactions.", null);
+      return;
+    }
+    handleChangeActiveButton(e);
+    loadComponent("/views/admin/manage-transactions.fxml");
+  }
+
+  @FXML
   public void handleRolePermissions(Event e) {
     if (!canAccessAdminRoute("/views/admin/role-permissions.fxml")) {
       AlertDialog.showAlert("error", "Access Denied", "You don't have permission to access Role Permissions.", null);
@@ -435,6 +447,7 @@ public class LayoutController implements AuthStateListener {
     btnManageUsers.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-users.fxml"));
     btnManageCategories.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-categories.fxml"));
     btnManageCards.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-cards.fxml"));
+    btnManageTransactions.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/manage-transactions.fxml"));
     btnRolePermissions.setVisible(isAdmin || PermissionService.getInstance().hasVisibility(role, "/views/admin/role-permissions.fxml"));
   }
 

@@ -311,6 +311,26 @@ public class BookModalController extends ControllerWithLoader {
                 + " is already existed.", null);
       } else {
         if (resp.getObjectId("_id") != null) {
+          // Create transaction record for new books (not for edits)
+          if (!isEditMode) {
+            try {
+              int copies = Integer.parseInt(numberOfCopies.getText());
+              double unitPrice = Double.parseDouble(priceField.getText());
+              String currencyCode = currencyCodeField.getText();
+              String bookTitle = titleField.getText();
+              
+              TransactionController.createAddBookTransaction(
+                  bookTitle, 
+                  copies, 
+                  unitPrice, 
+                  currencyCode
+              );
+            } catch (Exception ex) {
+              // Don't fail the whole operation if transaction creation fails
+              System.err.println("Failed to create transaction: " + ex.getMessage());
+            }
+          }
+          
           AlertDialog.showAlert("success", "Success",
               isEditMode ? "Book updated successfully." : "Book added successfully.", null);
           stage.close();
