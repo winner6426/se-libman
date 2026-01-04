@@ -7,11 +7,7 @@ import com.app.librarymanager.utils.DatePickerUtil;
 import com.app.librarymanager.utils.DateUtil;
 import com.app.librarymanager.utils.DateUtil.DateFormat;
 import com.app.librarymanager.utils.UploadFileUtil;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,7 +36,7 @@ import javafx.stage.FileChooser.ExtensionFilter;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import com.app.librarymanager.models.Book;
-import javax.imageio.ImageIO;
+
 import lombok.Setter;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -171,9 +167,25 @@ public class BookModalController extends ControllerWithLoader {
           publishedDateField.setValue(DateUtil.parse(book.getPublishedDate()));
           discountPriceField.setText(new DecimalFormat("#.##").format(book.getDiscountPrice()));
           isActiveCheckBox.setSelected(book.isActivated());
-          thumbnailPreview.setImage(
-              book.getThumbnail() != null && !book.getThumbnail().isEmpty() ? new Image(
-                  (book.getThumbnail())) : null);
+          
+          // Load thumbnail preview asynchronously with error handling
+          if (book.getThumbnail() != null && !book.getThumbnail().isEmpty()) {
+            try {
+              Image image = new Image(book.getThumbnail(), true); // true = background loading
+              image.errorProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) {
+                  // If image fails to load, set to null
+                  thumbnailPreview.setImage(null);
+                }
+              });
+              thumbnailPreview.setImage(image);
+            } catch (Exception ex) {
+              System.err.println("Error loading thumbnail preview: " + ex.getMessage());
+              thumbnailPreview.setImage(null);
+            }
+          } else {
+            thumbnailPreview.setImage(null);
+          }
           generateIdButton.setDisable(true);
           searchGoogleBooksContainer.setVisible(!searchGoogleBooksField.getText().isEmpty());
           return null;
@@ -285,8 +297,8 @@ public class BookModalController extends ControllerWithLoader {
       } else {
         AlertDialog.showAlert("error", "Error", "Book copies must greater than 0", null);
       }
-    } catch (Exception e) {
-      AlertDialog.showAlert("error", "Error", e.getMessage(), null);
+    } catch (Exception ex) {
+      AlertDialog.showAlert("error", "Error", ex.getMessage(), null);
       return;
     }
 
@@ -444,9 +456,28 @@ public class BookModalController extends ControllerWithLoader {
         for (Book book : newResults) {
           HBox hBox = new HBox(5);
           hBox.getStyleClass().add("popup-list-item");
-          ImageView imageView = new ImageView(book.getThumbnail());
+          ImageView imageView = new ImageView();
           imageView.setPreserveRatio(true);
           imageView.setFitHeight(60);
+          imageView.setFitWidth(40);
+          
+          // Load image asynchronously with error handling
+          if (book.getThumbnail() != null && !book.getThumbnail().isEmpty()) {
+            try {
+              Image image = new Image(book.getThumbnail(), true); // true = background loading
+              image.errorProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) {
+                  // If image fails to load, don't show anything
+                  imageView.setImage(null);
+                }
+              });
+              imageView.setImage(image);
+            } catch (Exception ex) {
+              // If there's an error creating the image, just skip it
+              System.err.println("Error loading thumbnail: " + ex.getMessage());
+            }
+          }
+          
           hBox.getChildren().add(imageView);
           VBox vBox = new VBox(5);
           Label titleLabel = new Label(book.getTitle());
@@ -513,12 +544,17 @@ public class BookModalController extends ControllerWithLoader {
           field.setText(fileLink);
           if (imgPreview != null) {
             try {
-              BufferedImage image = ImageIO.read(new File(file.getAbsolutePath()));
-              ByteArrayOutputStream baos = new ByteArrayOutputStream();
-              ImageIO.write(image, file.getName().split("\\.")[1], baos);
-              byte[] imageBytes = baos.toByteArray();
-              imgPreview.setImage(new Image(new ByteArrayInputStream(imageBytes)));
-            } catch (IOException ex) {
+              // Load image from uploaded URL with background loading
+              Image image = new Image(fileLink, true);
+              image.errorProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) {
+                  System.err.println("Error loading uploaded image preview");
+                  imgPreview.setImage(null);
+                }
+              });
+              imgPreview.setImage(image);
+            } catch (Exception ex) {
+              System.err.println("Error setting image preview: " + ex.getMessage());
               ex.printStackTrace();
             }
           }
