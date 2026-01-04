@@ -73,7 +73,6 @@ public class UserController {
 
   public static User getUser(String userId) {
     try {
-      checkPermission();
       UserRecord ur = FirebaseAuth.getInstance().getUser(userId);
       if (ur == null) return null;
       try {
