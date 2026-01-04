@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<?import javafx.geometry.Insets?>
+<AnchorPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1"
+  fx:controller="com.app.librarymanager.controllers.ManageTransactionsController">
+  <VBox spacing="10" AnchorPane.bottomAnchor="10.0" AnchorPane.leftAnchor="10.0"
+    AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+    <Text styleClass="content-title" text="Manage Transactions"/>
+    <HBox alignment="BOTTOM_LEFT" spacing="10">
+      <TextField fx:id="searchField" promptText="Search by note..." styleClass="input"/>
+      <Button fx:id="searchButton" text="Search" styleClass="btn,btn-primary"/>
+      <Region HBox.hgrow="ALWAYS"/>
+      <Label fx:id="paginationLabel" text="Page 0 of 0"/>
+      <Button fx:id="prevButton" text="Previous" styleClass="btn,btn-default"/>
+      <Button fx:id="nextButton" text="Next" styleClass="btn,btn-default"/>
+    </HBox>
+    <TableView fx:id="transactionsTable" tableMenuButtonVisible="true" VBox.vgrow="ALWAYS">
+      <columns>
+        <TableColumn fx:id="idColumn" text="Transaction ID" prefWidth="150"/>
+        <TableColumn fx:id="typeColumn" text="Type" prefWidth="120"/>
+        <TableColumn fx:id="dateColumn" text="Date" prefWidth="150"/>
+        <TableColumn fx:id="amountColumn" text="Amount" prefWidth="120"/>
+        <TableColumn fx:id="currencyCodeColumn" text="Currency" prefWidth="80"/>
+        <TableColumn fx:id="noteColumn" text="Note" prefWidth="300"/>
+      </columns>
+    </TableView>
+  </VBox>
+  <VBox fx:id="loadingOverlay" alignment="CENTER" styleClass="loading-wrapper" visible="false"
+    AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+    AnchorPane.topAnchor="0.0">
+    <VBox styleClass="loading-inner" alignment="CENTER" maxWidth="200">
+      <ProgressIndicator fx:id="loadingSpinner" maxHeight="100" maxWidth="100"/>
+      <Text text="Loading..." fx:id="loadingText"/>
+      <Button text="Cancel" fx:id="cancelButton" styleClass="btn, btn-text"/>
+    </VBox>
+  </VBox>
+</AnchorPane>

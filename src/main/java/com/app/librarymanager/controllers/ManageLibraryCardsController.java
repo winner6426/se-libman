@@ -175,6 +175,32 @@ public class ManageLibraryCardsController extends ControllerWithLoader {
             // don't fail the approval flow if role update fails
             System.err.println("Failed to update user role after card approval: " + ignore.getMessage());
           }
+          
+          // Create transaction record for card registration
+          try {
+            // Get the card document to retrieve the number of months
+            org.bson.Document cardDoc = com.app.librarymanager.services.MongoDB.getInstance()
+                .findAnObject("libraryCard", "_id", card.get_id());
+            
+            int months = 1; // Default to 1 month
+            if (cardDoc != null && cardDoc.getInteger("months") != null) {
+              months = cardDoc.getInteger("months");
+            }
+            
+            // Calculate registration fee based on number of months
+            double monthlyFee = 50000.0; // 50,000 VND per month
+            double registrationFee = months * monthlyFee;
+            
+            TransactionController.createRegisterCardTransaction(
+                card.getUserName(),
+                registrationFee,
+                "VND",
+                months
+            );
+          } catch (Exception ex) {
+            // Don't fail the whole operation if transaction creation fails
+            System.err.println("Failed to create transaction: " + ex.getMessage());
+          }
         }
         return null;
       }
