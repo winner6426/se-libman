@@ -107,7 +107,7 @@
         </graphic>
       </Button>
       <Separator styleClass="h-separator"/>
-      <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#onLogoutButtonClick"
+      <Button fx:id="logoutBtn" maxWidth="Infinity" mnemonicParsing="false" onAction="#onLogoutButtonClick"
         styleClass="btn, btn-toolbar, danger">
         <graphic>
           <HBox alignment="CENTER_LEFT" spacing="8" HBox.hgrow="ALWAYS">

@@ -2,7 +2,6 @@ package com.app.librarymanager.controllers;
 
 import com.app.librarymanager.interfaces.AuthStateListener;
 import com.app.librarymanager.models.User;
-import com.app.librarymanager.config.FeatureFlags;
 import com.app.librarymanager.services.PermissionService;
 import com.app.librarymanager.utils.AlertDialog;
 import com.app.librarymanager.utils.AvatarUtil;
