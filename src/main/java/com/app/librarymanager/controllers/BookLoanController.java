@@ -32,6 +32,7 @@ import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import com.app.librarymanager.models.ReturnRecord;
 import com.app.librarymanager.models.Penalty;
+import com.app.librarymanager.models.Transaction;
 
 public class BookLoanController {
 
@@ -499,6 +500,16 @@ public class BookLoanController {
         // try to find user id and create penalty
         Penalty p = new Penalty(loan.getUserId(), "Return penalty for loan " + loanId.toHexString(), penaltyAmount);
         MongoDB.getInstance().addToCollection("penalty", p.toDocument());
+        
+        // create transaction for penalty income
+        Transaction transaction = new Transaction(
+          Transaction.Type.RETURN_BOOK,
+          penaltyAmount, // positive amount = income
+          "VND",
+          "Penalty for loan " + loanId.toHexString() + " - User: " + loan.getUserId() + 
+          (conditionNotes != null && !conditionNotes.isEmpty() ? " - " + conditionNotes : "")
+        );
+        TransactionController.createTransaction(transaction);
       }
       return updatedLoan;
     } catch (Exception e) {

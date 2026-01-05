@@ -11,7 +11,8 @@ public class Transaction {
   public enum Type {
     SELL_BOOKS,
     REGISTER_CARD,
-    ADD_BOOK
+    ADD_BOOK,
+    RETURN_BOOK
   }
 
   private ObjectId _id;
@@ -141,6 +142,8 @@ public class Transaction {
         return "Register Card";
       case ADD_BOOK:
         return "Add Book";
+      case RETURN_BOOK:
+        return "Return Book";
       default:
         return "Unknown";
     }
