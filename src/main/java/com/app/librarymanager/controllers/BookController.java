@@ -7,7 +7,7 @@ import com.app.librarymanager.services.MongoDB;
 import com.app.librarymanager.utils.Fetcher;
 import com.app.librarymanager.utils.StringUtil;
 import com.mongodb.client.model.Filters;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.app.librarymanager.utils.EnvLoader;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.bson.Document;
@@ -19,7 +19,6 @@ import java.nio.charset.StandardCharsets;
 
 public class BookController {
 
-  private static final Dotenv dotenv = Dotenv.load();
   private static final String SEARCH_URL = "https://www.googleapis.com/books/v1/volumes?q=";
 
   /**
@@ -138,21 +137,21 @@ public class BookController {
 
   public static int numBookWithKeyword(String keyword) {
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
-    String searchUrl = SEARCH_URL + encodedKeyword + "&key=" + dotenv.get("GBOOKS_API_KEY");
+    String searchUrl = SEARCH_URL + encodedKeyword + "&key=" + EnvLoader.get("GBOOKS_API_KEY");
     return numBookInUrl(searchUrl);
   }
 
   public static List<Book> searchByKeyword(String keyword, int start, int length) {
     String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8);
     String searchUrl =
-        SEARCH_URL + encodedKeyword + "&key=" + dotenv.get("GBOOKS_API_KEY") + "&maxResults="
+        SEARCH_URL + encodedKeyword + "&key=" + EnvLoader.get("GBOOKS_API_KEY") + "&maxResults="
             + length + "&startIndex=" + start;
     return getBookInURL(searchUrl);
   }
 
   public static Book searchByISBN(String iSBN) {
     try {
-      String searchUrl = SEARCH_URL + "isbn:" + iSBN + "&key=" + dotenv.get("GBOOKS_API_KEY");
+      String searchUrl = SEARCH_URL + "isbn:" + iSBN + "&key=" + EnvLoader.get("GBOOKS_API_KEY");
       List<Book> bookList = getBookInURL(searchUrl);
       if (bookList.size() != 1) {
         return null;
