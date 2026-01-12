@@ -135,7 +135,7 @@ public class Transaction {
   }
 
   public String getTypeDisplay() {
-    switch (type) {
+    switch(type) {
       case SELL_BOOKS:
         return "Sell Books";
       case REGISTER_CARD:

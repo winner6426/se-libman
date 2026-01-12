@@ -23,7 +23,7 @@ import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.app.librarymanager.utils.EnvLoader;
 import java.lang.reflect.Array;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -42,8 +42,7 @@ public class MongoDB {
 
   private static MongoDB instance = null;
 
-  private static final Dotenv dotenv = Dotenv.load();
-  private static final String connectionString = dotenv.get("MONGODB_URI");
+  private static final String connectionString = EnvLoader.get("MONGODB_URI");
   private static final String databaseName = "library-manager";
 
   private MongoClient mongoClient = null;

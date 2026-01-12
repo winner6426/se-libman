@@ -18,9 +18,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.auth.UserRecord.CreateRequest;
-import io.github.cdimascio.dotenv.Dotenv;
+import com.app.librarymanager.utils.EnvLoader;
 import java.awt.Desktop;
-import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,12 +35,11 @@ import org.json.JSONObject;
 
 public class FirebaseAuthentication {
 
-  private static final Dotenv dotenv = Dotenv.load();
   private static final String LOGIN_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=";
   private static final String REGISTER_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=";
   private static final String RESET_PASSWORD_URL = "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=";
   private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-  private static final String CREDENTIALS_FILE_PATH = dotenv.get("FIREBASE_CLIENT_SECRET_PATH");
+  private static final String CREDENTIALS_FILE_PATH = EnvLoader.get("FIREBASE_CLIENT_SECRET_PATH");
   private static final Collection<String> SCOPES = Arrays.asList(
       "https://www.googleapis.com/auth/userinfo.email",
       "https://www.googleapis.com/auth/userinfo.profile");
@@ -174,8 +174,12 @@ public class FirebaseAuthentication {
   }
 
   private static GoogleClientSecrets loadClientSecrets() throws IOException {
-    assert CREDENTIALS_FILE_PATH != null;
-    FileReader reader = new FileReader(CREDENTIALS_FILE_PATH);
+    String credentialsPath = CREDENTIALS_FILE_PATH != null ? CREDENTIALS_FILE_PATH : "/client_secret.json";
+    InputStream inputStream = FirebaseAuthentication.class.getResourceAsStream(credentialsPath);
+    if (inputStream == null) {
+      throw new IOException("Client secret file not found in classpath: " + credentialsPath);
+    }
+    InputStreamReader reader = new InputStreamReader(inputStream);
     return GoogleClientSecrets.load(JSON_FACTORY, reader);
   }
 
